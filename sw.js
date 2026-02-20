@@ -1,11 +1,11 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v7';
+const CACHE_NAME = 'cnvn-dict-v8';
 const APP_ASSETS = [
     './',
-    'index.html',
-    'app.js',
-    'dict-engine.js',
-    'dict-default.json'
+    './index.html',
+    './app.js',
+    './dict-engine.js',
+    './dict-default.json'
 ];
 
 self.addEventListener('install', function (event) {
@@ -31,24 +31,36 @@ self.addEventListener('activate', function (event) {
     );
 });
 
-// Offline-first: cache → network fallback
+// Cache-first, network fallback
 self.addEventListener('fetch', function (event) {
+    var request = event.request;
+
+    // Only handle GET requests
+    if (request.method !== 'GET') return;
+
+    // Skip cross-origin requests (CDN fonts, external APIs, etc.)
+    if (!request.url.startsWith(self.location.origin)) return;
+
     event.respondWith(
-        caches.match(event.request).then(function (cached) {
+        caches.match(request, { ignoreSearch: true }).then(function (cached) {
             if (cached) return cached;
-            return fetch(event.request).then(function (response) {
-                if (response.ok && event.request.method === 'GET') {
+            return fetch(request).then(function (response) {
+                // Only cache successful responses
+                if (response.ok) {
                     var clone = response.clone();
                     caches.open(CACHE_NAME).then(function (cache) {
-                        cache.put(event.request, clone);
+                        cache.put(request, clone);
                     });
                 }
                 return response;
             });
         }).catch(function () {
-            if (event.request.mode === 'navigate') {
-                return caches.match('index.html');
+            // Offline fallback: return cached index.html for navigation
+            if (request.mode === 'navigate') {
+                return caches.match('./index.html');
             }
+            // For other requests, return empty response to avoid ERR_FAILED
+            return new Response('', { status: 503, statusText: 'Offline' });
         })
     );
 });
