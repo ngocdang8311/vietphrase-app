@@ -756,6 +756,7 @@
             display: flex;
             gap: 8px;
             margin-top: 14px;
+            flex-wrap: wrap;
         }
         .dm-add-input {
             flex: 1;
@@ -825,6 +826,12 @@
             textarea { min-height: 150px; }
             .header-logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
             .header h1 { font-size: 18px; }
+            .dm-section { padding: 14px; }
+            .dm-add-row { flex-direction: column; }
+            .dm-add-row .dm-add-input { width: 100%; }
+            .dm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .dm-toolbar { gap: 6px; }
+            .dm-toolbar .dm-search { min-width: 100%; }
         }
 
         @media (min-width: 1100px) {
