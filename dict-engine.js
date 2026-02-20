@@ -53,6 +53,43 @@
         return entries;
     }
 
+    // Extract clean Vietnamese meaning from raw dict value
+    // Handles both standard format (value/alt) and extended format:
+    //   +[pinyin] Hán Việt: XXX\n\t1. meaning1; meaning2\n\t2. ...//+[pinyin2] ...
+    function extractMeaning(raw) {
+        // Extended format: contains +[pinyin]
+        if (raw.indexOf('+[') !== -1) {
+            // Try first numbered meaning \t1. across all readings
+            var t1 = raw.indexOf('\\t1.');
+            if (t1 !== -1) {
+                var meat = raw.substring(t1 + 4).trim();
+                // Cut at next \n\t or \n or //
+                var end = meat.search(/\\n|\/\//);
+                if (end !== -1) meat = meat.substring(0, end);
+                // Take first meaning before ;
+                var semi = meat.indexOf(';');
+                if (semi !== -1) meat = meat.substring(0, semi);
+                // Strip parenthetical notes for cleaner output
+                meat = meat.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+                if (meat) return meat;
+            }
+            // Fallback: extract Hán Việt reading
+            var hv = raw.indexOf('Hán Việt:');
+            if (hv !== -1) {
+                var hvVal = raw.substring(hv + 9).trim();
+                var hvEnd = hvVal.search(/\\[nt]|\/\//);
+                if (hvEnd !== -1) hvVal = hvVal.substring(0, hvEnd);
+                hvVal = hvVal.split(/[;；]/)[0].trim();
+                if (hvVal) return hvVal;
+            }
+        }
+        // Standard format: split by // first, then / for alternatives
+        var dslash = raw.indexOf('//');
+        var first = dslash !== -1 ? raw.substring(0, dslash).trim() : raw;
+        var slash = first.indexOf('/');
+        return slash !== -1 ? first.substring(0, slash).trim() : first;
+    }
+
     function parseDictText(text, priority) {
         var entries = [];
         var lines = text.split('\n');
@@ -63,8 +100,8 @@
             if (eq < 1) continue;
             var zh = line.substring(0, eq).trim();
             var viRaw = line.substring(eq + 1).trim();
-            var vi = viRaw.indexOf('/') !== -1 ? viRaw.substring(0, viRaw.indexOf('/')).trim() : viRaw;
-            if (zh) entries.push([zh, vi, priority]);
+            var vi = extractMeaning(viRaw);
+            if (zh && vi) entries.push([zh, vi, priority]);
         }
         return entries;
     }
