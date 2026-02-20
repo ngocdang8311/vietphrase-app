@@ -167,39 +167,60 @@
             display: flex;
             flex-direction: column;
             padding: 24px;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
         }
 
-        /* ---- Header ---- */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
+        /* ---- Hero banner ---- */
+        .hero-banner {
+            position: relative;
+            text-align: center;
+            padding: 20px 16px 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(160deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.06) 50%, rgba(236,72,153,0.04) 100%);
+            border: 1px solid rgba(130,120,255,0.1);
         }
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        .header-logo {
-            width: 42px; height: 42px;
-            background: var(--gradient-btn);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-            box-shadow: 0 4px 16px rgba(99,102,241,0.35);
-            flex-shrink: 0;
+        .hero-ascii {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            line-height: 1.15;
+            color: rgba(130,120,255,0.35);
+            white-space: pre;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            animation: asciiGlow 4s ease-in-out infinite alternate;
+            user-select: none;
         }
-        .header h1 {
-            font-size: 22px;
+        @keyframes asciiGlow {
+            0% { color: rgba(130,120,255,0.25); text-shadow: none; }
+            50% { color: rgba(168,85,247,0.45); text-shadow: 0 0 20px rgba(168,85,247,0.15); }
+            100% { color: rgba(236,72,153,0.35); text-shadow: 0 0 30px rgba(236,72,153,0.1); }
+        }
+        .hero-title {
+            font-size: 26px;
             font-weight: 800;
-            letter-spacing: -0.3px;
-            background: linear-gradient(135deg, #e8e6f0 30%, var(--accent-2));
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #e8e6f0 0%, var(--accent) 40%, var(--accent-2) 70%, #ec4899 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin-bottom: 4px;
         }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .hero-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
         #btnInstall {
             display: inline-flex;
@@ -820,12 +841,13 @@
 
         /* ---- Responsive ---- */
         @media (max-width: 700px) {
-            .app { padding: 16px; }
-            .header { margin-bottom: 20px; }
+            .app { padding: 16px; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
+            .hero-banner { padding: 16px 12px 12px; margin-bottom: 18px; }
+            .hero-ascii { font-size: 5.5px; letter-spacing: 0.5px; margin-bottom: 8px; }
+            .hero-title { font-size: 22px; }
+            .hero-sub { font-size: 10px; letter-spacing: 1.5px; }
             .translate-area { grid-template-columns: 1fr; }
             textarea { min-height: 150px; }
-            .header-logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
-            .header h1 { font-size: 18px; }
             .dm-section { padding: 14px; }
             .dm-add-row { flex-direction: column; }
             .dm-add-row .dm-add-input { width: 100%; }
@@ -851,11 +873,27 @@
     <div class="bg-noise"></div>
 
     <div class="app">
-        <div class="header">
-            <div class="header-left">
-                <div class="header-logo">&#x6F22;</div>
-                <h1>CN-VN Translator</h1>
-            </div>
+        <div class="hero-banner">
+<pre class="hero-ascii">
+          ___====-_  _-====___
+    _--^^^#####//      \\#####^^^--_
+ _-^##########// (    ) \\##########^-_
+-############//  |\^^/|  \\############-
+_/############//   (@::@)   \\############\_
+/#############((     \\//     ))#############\
+-###############\\    (oo)    //###############-
+-#################\\  / "" \  //#################-
+-###################\\/      \//###################-
+_#/|##########/\######(   /\   )######/\##########|\#_
+|/ |#/\#/\#/\/  \#/\##\  |  |  /##/\#/  \/\#/\#/\#| \|
+`  |/  V  V  `   V  \#\| |  | |/#/  V   '  V  V  \|  '
+   `   `  `      `   / | |  | | \   '      '  '   '
+                    (  | |  | |  )
+                   __\ | |  | | /__
+                  (vvv(VVV)(VVV)vvv)
+</pre>
+            <div class="hero-title">VietPhrase</div>
+            <div class="hero-sub">Chinese &#x2192; Vietnamese Translator</div>
             <div class="header-actions">
                 <button id="btnInstall" class="hidden">Install App</button>
             </div>
