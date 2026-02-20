@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0c0c14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CN-VN Translator</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --bg: #0a0a12;
+            --bg-subtle: #10101c;
+            --surface: rgba(255,255,255,0.04);
+            --surface-hover: rgba(255,255,255,0.07);
+            --surface-card: rgba(255,255,255,0.06);
+            --surface-card-hover: rgba(255,255,255,0.09);
+            --border: rgba(255,255,255,0.08);
+            --border-focus: rgba(130,120,255,0.4);
+            --text: #e8e6f0;
+            --text-secondary: rgba(232,230,240,0.55);
+            --text-muted: rgba(232,230,240,0.3);
+            --accent: #7c6cf0;
+            --accent-2: #c084fc;
+            --accent-glow: rgba(124,108,240,0.25);
+            --green: #4ade80;
+            --green-soft: rgba(74,222,128,0.12);
+            --orange: #fb923c;
+            --orange-soft: rgba(251,146,60,0.12);
+            --gradient-btn: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            --gradient-btn-hover: linear-gradient(135deg, #7577f5, #9b6ff9, #b96bf9);
+            --gradient-green: linear-gradient(135deg, #22c55e, #4ade80);
+            --radius: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px var(--border);
+            --shadow-glow: 0 0 30px var(--accent-glow);
+            --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { height: 100%; }
+        body {
+            min-height: 100%;
+            font-family: var(--font);
+            font-size: 15px;
+            color: var(--text);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ---- Ambient background ---- */
+        .bg-ambient {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.35;
+            animation: orbFloat 20s ease-in-out infinite alternate;
+        }
+        .bg-orb-1 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #6366f1, transparent 70%);
+            top: -200px; left: -100px;
+        }
+        .bg-orb-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #a855f7, transparent 70%);
+            bottom: -150px; right: -100px;
+            animation-delay: -7s;
+        }
+        .bg-orb-3 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, #3b82f6, transparent 70%);
+            top: 40%; left: 50%;
+            opacity: 0.15;
+            animation-delay: -13s;
+        }
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+            100% { transform: translate(10px, -10px) scale(1.02); }
+        }
+        /* Noise overlay */
+        .bg-noise {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+        }
+
+        /* ---- App shell ---- */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1060px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        /* ---- Header ---- */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-logo {
+            width: 42px; height: 42px;
+            background: var(--gradient-btn);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+            flex-shrink: 0;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #e8e6f0 30%, var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+
+        #btnInstall {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s var(--ease);
+        }
+        #btnInstall:hover { background: var(--surface-card-hover); border-color: var(--accent); }
+        .hidden { display: none !important; }
+
+        /* ---- Tabs ---- */
+        .tabs {
+            display: inline-flex;
+            padding: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            align-self: flex-start;
+        }
+        .tab {
+            padding: 9px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 9px;
+            position: relative;
+            transition: color 0.2s var(--ease);
+            user-select: none;
+        }
+        .tab:hover:not(.active) { color: var(--text); }
+        .tab.active {
+            color: #fff;
+            background: var(--gradient-btn);
+            box-shadow: 0 2px 10px rgba(99,102,241,0.3);
+        }
+
+        /* ---- Panels ---- */
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: panelIn 0.4s var(--ease);
+        }
+        .panel.hidden { display: none !important; }
+        @keyframes panelIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---- Translation area (side-by-side on desktop) ---- */
+        .translate-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .translate-col { display: flex; flex-direction: column; gap: 0; }
+
+        .col-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .col-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+        }
+        .col-label-zh { color: rgba(251,146,60,0.6); }
+        .col-label-vi { color: rgba(74,222,128,0.6); }
+
+        .col-actions { display: flex; gap: 4px; }
+
+        .output-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+        }
+        .output-toggle-btn {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 4px 12px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .output-toggle-btn:hover {
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.04);
+        }
+        .output-toggle-btn.active {
+            background: rgba(74,222,128,0.12);
+            color: rgba(74,222,128,0.9);
+        }
+
+        /* ---- Glass cards ---- */
+        .glass-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .glass-card:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: var(--shadow-glow);
+        }
+
+        textarea {
+            width: 100%;
+            border: none;
+            padding: 18px 20px;
+            font-size: 15px;
+            font-family: var(--font);
+            resize: none;
+            outline: none;
+            line-height: 1.65;
+            color: var(--text);
+            background: transparent;
+            flex: 1;
+            min-height: 220px;
+        }
+        textarea::placeholder { color: var(--text-muted); }
+
+        .card-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+        }
+        .hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ---- Buttons ---- */
+        .btn {
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font);
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.2s var(--ease);
+        }
+        .btn:active { transform: scale(0.96); }
+
+        .btn-primary {
+            background: var(--gradient-btn);
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 14px;
+            font-size: 15px;
+            box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: var(--gradient-btn-hover);
+            box-shadow: 0 6px 28px rgba(99,102,241,0.4);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active { transform: translateY(0) scale(0.98); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 7px 12px;
+            font-size: 13px;
+            border: 1px solid transparent;
+        }
+        .btn-ghost:hover { color: var(--text); background: var(--surface); }
+
+        .btn-tinted {
+            background: rgba(124,108,240,0.12);
+            color: var(--accent-2);
+            padding: 7px 14px;
+            font-size: 13px;
+        }
+        .btn-tinted:hover { background: rgba(124,108,240,0.2); }
+
+        .btn-row { display: flex; gap: 10px; }
+        .btn-row .btn { flex: 1; }
+
+        .btn-secondary {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+        }
+        .btn-secondary:hover { background: var(--surface-card-hover); border-color: rgba(255,255,255,0.15); }
+
+        /* ---- File panel ---- */
+        .file-drop {
+            background: var(--surface-card);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: var(--radius-xl);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s var(--ease);
+        }
+        .file-drop:hover {
+            border-color: var(--accent);
+            background: rgba(124,108,240,0.05);
+        }
+        .file-drop.dragover {
+            border-color: var(--accent);
+            background: rgba(124,108,240,0.1);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-glow);
+        }
+        .file-drop input { display: none; }
+        .file-drop-icon { font-size: 44px; margin-bottom: 14px; opacity: 0.4; }
+        .file-drop-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .file-drop-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .file-list { display: flex; flex-direction: column; gap: 8px; }
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            flex-wrap: wrap;
+        }
+        .file-name { font-weight: 600; font-size: 14px; word-break: break-all; }
+        .file-size { color: var(--text-muted); font-size: 13px; }
+        .file-status { font-size: 13px; color: var(--orange); font-weight: 600; }
+        .file-status.done { color: var(--green); }
+        .btn-file-dl {
+            margin-left: auto;
+            padding: 7px 16px;
+            background: rgba(124,108,240,0.12);
+            color: var(--accent-2);
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.15s var(--ease);
+        }
+        .btn-file-dl:hover { background: rgba(124,108,240,0.22); }
+
+        #btnDownloadAll {
+            width: 100%;
+            padding: 14px;
+            background: var(--gradient-green);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font);
+            box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+            transition: all 0.2s var(--ease);
+        }
+        #btnDownloadAll:hover { box-shadow: 0 6px 24px rgba(34,197,94,0.4); transform: translateY(-1px); }
+        #btnDownloadAll:active { transform: translateY(0) scale(0.98); }
+
+        /* ---- Dictionary ---- */
+        .dict-section { margin-top: auto; padding-top: 24px; }
+        .dict-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s var(--ease);
+        }
+        .dict-toggle:hover { background: var(--surface-card-hover); }
+        .arrow {
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: transform 0.2s var(--ease);
+        }
+        .dict-toggle-label { flex: 1; }
+        .dict-toggle-icon { font-size: 18px; opacity: 0.4; }
+
+        .dict-body {
+            margin-top: 8px;
+            padding: 16px 18px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .dict-stats {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .dict-actions { display: flex; gap: 8px; }
+        .dict-actions button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.15s var(--ease);
+        }
+        .dict-actions button:active { transform: scale(0.96); }
+        .btn-import {
+            background: rgba(124,108,240,0.12);
+            color: var(--accent-2);
+        }
+        .btn-import:hover { background: rgba(124,108,240,0.22); }
+
+        /* ---- Dict Manager panel ---- */
+        .dm-source-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .dm-source-name { font-weight: 600; flex: 1; word-break: break-all; }
+        .dm-source-count { color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+        .dm-source-date { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+        .dm-sample-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+        .dm-sample-list { display: flex; flex-direction: column; gap: 6px; }
+        .dm-sample-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .dm-sample-info { flex: 1; min-width: 0; }
+        .dm-sample-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .dm-sample-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .dm-sample-btn { white-space: nowrap; }
+        .dm-sample-btn.loading { opacity: 0.6; pointer-events: none; }
+        .dm-sample-btn.done { background: rgba(74,222,128,0.15); color: rgba(74,222,128,0.9); }
+        .dm-section {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            margin-bottom: 16px;
+        }
+        .dm-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+        .dm-stats-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .dm-stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 18px;
+            min-width: 110px;
+            flex: 1;
+        }
+        .dm-stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .dm-stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            margin-top: 2px;
+        }
+        .dm-toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .dm-search {
+            flex: 1;
+            min-width: 160px;
+            padding: 9px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s var(--ease);
+        }
+        .dm-search::placeholder { color: var(--text-muted); }
+        .dm-search:focus { border-color: var(--border-focus); }
+        .dm-btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.15s var(--ease);
+            white-space: nowrap;
+        }
+        .dm-btn:active { transform: scale(0.96); }
+        .dm-btn-accent {
+            background: rgba(124,108,240,0.12);
+            color: var(--accent-2);
+        }
+        .dm-btn-accent:hover { background: rgba(124,108,240,0.22); }
+        .dm-btn-green {
+            background: var(--green-soft);
+            color: var(--green);
+        }
+        .dm-btn-green:hover { background: rgba(74,222,128,0.2); }
+        .dm-btn-red {
+            background: rgba(255,59,48,0.1);
+            color: #ff6b6b;
+        }
+        .dm-btn-red:hover { background: rgba(255,59,48,0.18); }
+        .dm-btn-default {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .dm-btn-default:hover { background: var(--surface-hover); color: var(--text); }
+
+        /* Phrases table */
+        .dm-table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .dm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .dm-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+        .dm-table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .dm-table tr:last-child td { border-bottom: none; }
+        .dm-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .dm-table .col-zh { width: 30%; }
+        .dm-table .col-vi { width: 40%; }
+        .dm-table .col-act { width: 30%; white-space: nowrap; }
+        .dm-cell {
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .dm-cell:hover { background: rgba(124,108,240,0.08); }
+        .dm-cell-edit {
+            width: 100%;
+            padding: 6px 10px;
+            background: var(--surface);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            outline: none;
+        }
+        .dm-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 28px;
+            font-size: 14px;
+        }
+        .dm-btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+            border-radius: 7px;
+        }
+
+        /* Add row */
+        .dm-add-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .dm-add-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s var(--ease);
+        }
+        .dm-add-input::placeholder { color: var(--text-muted); }
+        .dm-add-input:focus { border-color: var(--border-focus); }
+
+        /* Import sources */
+        .dm-source-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .dm-import-progress {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* ---- Loading overlay ---- */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10,10,18,0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.3s var(--ease);
+        }
+        .loading-overlay.hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 700px) {
+            .app { padding: 16px; }
+            .header { margin-bottom: 20px; }
+            .translate-area { grid-template-columns: 1fr; }
+            textarea { min-height: 150px; }
+            .header-logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
+            .header h1 { font-size: 18px; }
+        }
+
+        @media (min-width: 1100px) {
+            .app { max-width: 1120px; padding: 32px 48px; }
+        }
+
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        textarea:focus-visible { outline: none; }
+    </style>
+</head>
+<body>
+    <div class="bg-ambient">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+    </div>
+    <div class="bg-noise"></div>
+
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <div class="header-logo">&#x6F22;</div>
+                <h1>CN-VN Translator</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btnInstall" class="hidden">Install App</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" id="tabText">Text</div>
+            <div class="tab" id="tabFile">File</div>
+            <div class="tab" id="tabDict">Dictionary</div>
+        </div>
+
+        <!-- Text panel -->
+        <div class="panel" id="panelText">
+            <div class="translate-area">
+                <!-- Input column -->
+                <div class="translate-col">
+                    <div class="col-header">
+                        <span class="col-label col-label-zh">Chinese</span>
+                        <div class="col-actions">
+                            <button class="btn btn-ghost" id="btnClear">Clear</button>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <textarea id="inputText" placeholder="Paste or type Chinese text here..." rows="8"></textarea>
+                        <div class="card-bottom">
+                            <span class="hint">Ctrl + Enter to translate</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Output column -->
+                <div class="translate-col">
+                    <div class="col-header">
+                        <div class="output-toggle">
+                            <button class="output-toggle-btn active" data-mode="vietphrase">Việt Phrase</button>
+                            <button class="output-toggle-btn" data-mode="hanviet">Hán Việt</button>
+                        </div>
+                        <div class="col-actions">
+                            <button class="btn btn-tinted" id="btnCopy">Copy</button>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <textarea id="outputText" placeholder="Translation will appear here..." readonly rows="8"></textarea>
+                        <div class="card-bottom">
+                            <span class="hint" id="translateTime"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="btnTranslate">Translate</button>
+            </div>
+
+            <div class="dict-section">
+                <div class="dict-toggle" id="dictToggle">
+                    <span class="arrow">&#9656;</span>
+                    <span class="dict-toggle-label">Dictionary</span>
+                    <span class="dict-toggle-icon">&#x1F4D6;</span>
+                </div>
+                <div class="dict-body hidden" id="dictBody">
+                    <div class="dict-stats" id="dictStats">Loading...</div>
+                    <div class="dict-actions">
+                        <button class="btn-import" id="btnImportDict">Import .txt</button>
+                    </div>
+                    <input type="file" id="dictFileInput" accept=".txt" multiple style="display:none">
+                </div>
+            </div>
+        </div>
+
+        <!-- File panel -->
+        <div class="panel hidden" id="panelFile">
+            <div class="file-drop" id="fileDrop">
+                <div class="file-drop-icon">&#x1F4C4;</div>
+                <div class="file-drop-title">Choose .txt files</div>
+                <div class="file-drop-sub">or drag and drop here</div>
+                <input type="file" id="fileInput" accept=".txt" multiple>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <button id="btnDownloadAll" class="hidden">Download All</button>
+
+            <div class="dict-section">
+                <div class="dict-toggle" id="dictToggle2">
+                    <span class="arrow">&#9656;</span>
+                    <span class="dict-toggle-label">Dictionary</span>
+                    <span class="dict-toggle-icon">&#x1F4D6;</span>
+                </div>
+                <div class="dict-body hidden" id="dictBody2">
+                    <div class="dict-stats" id="dictStats2">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dictionary Manager panel -->
+        <div class="panel hidden" id="panelDict">
+            <!-- Stats -->
+            <div class="dm-section">
+                <div class="dm-section-title">Dictionary Stats</div>
+                <div class="dm-stats-row" id="dmStatsRow">
+                    <div class="dm-stat">
+                        <div class="dm-stat-label">Total</div>
+                        <div class="dm-stat-value" id="dmStatTotal">-</div>
+                    </div>
+                    <div class="dm-stat">
+                        <div class="dm-stat-label">Phienam</div>
+                        <div class="dm-stat-value" id="dmStatPhienam">-</div>
+                    </div>
+                    <div class="dm-stat">
+                        <div class="dm-stat-label">Custom</div>
+                        <div class="dm-stat-value" id="dmStatCustom">-</div>
+                    </div>
+                </div>
+                <div class="dm-source-row">
+                    <button class="dm-btn dm-btn-accent" id="dmImportTxt">Import .txt Dictionary</button>
+                    <button class="dm-btn dm-btn-red hidden" id="dmClearAllImported">Clear All Imported</button>
+                    <input type="file" id="dmTxtFileInput" accept=".txt" multiple style="display:none">
+                </div>
+                <div class="dm-import-progress hidden" id="dmImportProgress"></div>
+                <div id="dmSourcesList" style="margin-top:12px"></div>
+            </div>
+
+            <!-- Sample Dictionaries -->
+            <div class="dm-section">
+                <div class="dm-section-title">Sample Dictionaries</div>
+                <div class="dm-sample-desc">Download and import pre-built dictionaries. Imported data persists across sessions.</div>
+                <div class="dm-sample-list" id="dmSampleList">
+                    <div class="dm-sample-item" data-file="ChinesePhienAmWords.txt">
+                        <div class="dm-sample-info">
+                            <div class="dm-sample-name">ChinesePhienAmWords</div>
+                            <div class="dm-sample-meta">12.6K entries &middot; 134 KB &middot; Hán Việt phiên âm</div>
+                        </div>
+                        <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
+                    </div>
+                    <div class="dm-sample-item" data-file="Names.txt">
+                        <div class="dm-sample-info">
+                            <div class="dm-sample-name">Names</div>
+                            <div class="dm-sample-meta">158.9K entries &middot; 4.2 MB &middot; Tên riêng, địa danh</div>
+                        </div>
+                        <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
+                    </div>
+                    <div class="dm-sample-item" data-file="LacViet.txt">
+                        <div class="dm-sample-info">
+                            <div class="dm-sample-name">LacViet</div>
+                            <div class="dm-sample-meta">66.4K entries &middot; 5.4 MB &middot; Từ điển Lạc Việt chi tiết</div>
+                        </div>
+                        <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
+                    </div>
+                    <div class="dm-sample-item" data-file="VietPhrase_1.txt,VietPhrase_2.txt">
+                        <div class="dm-sample-info">
+                            <div class="dm-sample-name">VietPhrase</div>
+                            <div class="dm-sample-meta">878.8K entries &middot; 32.2 MB &middot; Bộ Việt Phrase chính (2 parts)</div>
+                        </div>
+                        <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Phrases -->
+            <div class="dm-section">
+                <div class="dm-section-title">Custom Phrases</div>
+                <div class="dm-toolbar">
+                    <input type="text" class="dm-search" id="dmSearch" placeholder="Search phrases...">
+                    <button class="dm-btn dm-btn-default" id="dmExportJson">Export .txt</button>
+                    <button class="dm-btn dm-btn-default" id="dmImportJson">Import .txt</button>
+                    <button class="dm-btn dm-btn-red" id="dmClearAll">Clear All</button>
+                    <input type="file" id="dmJsonFileInput" accept=".txt,.text" style="display:none">
+                </div>
+
+                <div class="dm-table-wrap">
+                    <table class="dm-table">
+                        <thead>
+                            <tr>
+                                <th class="col-zh">Chinese</th>
+                                <th class="col-vi">Vietnamese</th>
+                                <th class="col-act">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dmPhraseTable"></tbody>
+                    </table>
+                    <div class="dm-empty hidden" id="dmEmpty">No custom phrases yet. Add one below.</div>
+                </div>
+
+                <div class="dm-add-row">
+                    <input type="text" class="dm-add-input" id="dmAddZh" placeholder="Chinese (e.g. &#25104;&#40857;)">
+                    <input type="text" class="dm-add-input" id="dmAddVi" placeholder="Vietnamese (e.g. Th&#224;nh Long)">
+                    <button class="dm-btn dm-btn-green" id="dmAddBtn">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading dictionary...</div>
+    </div>
+
+    <script src="dict-engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
