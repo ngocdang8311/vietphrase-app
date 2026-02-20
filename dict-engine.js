@@ -88,6 +88,14 @@
         return str.replace(CN_PUNCT_RE, function (ch) { return CN_PUNCT_MAP[ch] || ch; });
     }
 
+    // Normalize line breaks: trim whitespace around \n, collapse 3+ blank lines to 2
+    function cleanLineBreaks(str) {
+        str = str.replace(/\r\n/g, '\n');          // Windows → Unix
+        str = str.replace(/[ \t]*\n[ \t]*/g, '\n'); // trim spaces around \n
+        str = str.replace(/\n{3,}/g, '\n\n');       // collapse 3+ newlines → 2
+        return str;
+    }
+
     // Capitalize first letter of each sentence (after .!? or newline)
     function capitalizeSentences(str) {
         return str.replace(/(^|[.!?\n]\s*)([a-zàáạảãăắằặẳẵâấầậẩẫđèéẹẻẽêếềệểễìíịỉĩòóọỏõôốồộổỗơớờợởỡùúụủũưứừựửữỳýỵỷỹ])/gu, function (m, pre, ch) {
@@ -118,6 +126,7 @@
         out = normalizePunctuation(out);
         out = out.replace(/ ([.,!?;:\)\]\u00BB\u201D\u2019>])/g, '$1');  // space before closing punct
         out = out.replace(/([\(\[\u00AB\u201C\u2018<]) /g, '$1');  // space after opening punct
+        out = cleanLineBreaks(out);
         out = out.replace(/ {2,}/g, ' ').trim();
         return capitalizeSentences(out);
     }
@@ -348,6 +357,7 @@
         out = normalizePunctuation(out);
         out = out.replace(/ ([.,!?;:\)\]\u00BB\u201D\u2019>])/g, '$1');
         out = out.replace(/([\(\[\u00AB\u201C\u2018<]) /g, '$1');
+        out = cleanLineBreaks(out);
         out = out.replace(/ {2,}/g, ' ').trim();
         return capitalizeSentences(out);
     }
