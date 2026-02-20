@@ -1,22 +1,17 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v6';
+const CACHE_NAME = 'cnvn-dict-v7';
 const APP_ASSETS = [
     './',
     'index.html',
     'app.js',
-    'dict-engine.js'
+    'dict-engine.js',
+    'dict-default.json'
 ];
 
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
-            // Core app shell — must succeed
-            return cache.addAll(APP_ASSETS).then(function () {
-                // Dictionary — best effort, don't block install
-                return fetch('../dict-default.json')
-                    .then(function (r) { if (r.ok) cache.put('../dict-default.json', r); })
-                    .catch(function () {});
-            });
+            return cache.addAll(APP_ASSETS);
         }).then(function () {
             return self.skipWaiting();
         })

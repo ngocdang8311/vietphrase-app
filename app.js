@@ -312,7 +312,7 @@
     // --- Init ---
     function init() {
         loadingOverlay.classList.remove('hidden');
-        DictEngine.loadDictionary('../dict-default.json').then(function (ok) {
+        DictEngine.loadDictionary('dict-default.json').then(function (ok) {
             loadingOverlay.classList.add('hidden');
             if (ok) {
                 updateDictStats();
