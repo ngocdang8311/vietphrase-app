@@ -257,6 +257,16 @@
         dictFileInput.click();
     });
 
+    // Auto-detect priority from filename
+    function guessPriority(filename) {
+        var lower = filename.toLowerCase();
+        if (/name/i.test(lower)) return 20;        // Names → highest
+        if (/vietphrase/i.test(lower)) return 10;   // VietPhrase → standard
+        if (/lacviet/i.test(lower)) return 8;        // LacViet → lower
+        if (/phienam/i.test(lower)) return 5;        // PhienAm → lowest import
+        return 10;                                    // default
+    }
+
     dictFileInput.addEventListener('change', function () {
         const files = dictFileInput.files;
         if (!files.length) return;
@@ -267,7 +277,8 @@
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     var text = decodeBuffer(e.target.result);
-                    DictEngine.importDictText(text, 10, file.name).then(function (count) {
+                    var pri = guessPriority(file.name);
+                    DictEngine.importDictText(text, pri, file.name).then(function (count) {
                         totalImported += count;
                         pending--;
                         if (pending === 0) {
@@ -674,14 +685,14 @@
         });
     }
 
-    // Fetch + import a single dict file, return promise with count
-    function fetchAndImport(file) {
+    // Fetch + import a single dict file with given priority, return promise with count
+    function fetchAndImport(file, priority) {
         return fetch('dicts/' + file).then(function (resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + file);
             return resp.arrayBuffer();
         }).then(function (buf) {
             var text = decodeBuffer(buf);
-            return DictEngine.importDictText(text, 10, file);
+            return DictEngine.importDictText(text, priority || 10, file);
         });
     }
 
@@ -693,6 +704,7 @@
         var fileAttr = item.dataset.file;
         if (!fileAttr) return;
         var files = fileAttr.split(',');
+        var priority = parseInt(item.dataset.priority, 10) || 10;
 
         btn.classList.add('loading');
         btn.textContent = 'Downloading...';
@@ -712,7 +724,7 @@
             btn.textContent = files.length > 1
                 ? 'Importing ' + (idx + 1) + '/' + files.length + '...'
                 : 'Importing...';
-            fetchAndImport(file).then(function (count) {
+            fetchAndImport(file, priority).then(function (count) {
                 totalCount += count;
                 idx++;
                 next();
