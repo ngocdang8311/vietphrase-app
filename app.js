@@ -257,19 +257,12 @@
         dictFileInput.click();
     });
 
-    // Auto-detect priority from filename
-    function guessPriority(filename) {
-        var lower = filename.toLowerCase();
-        if (/name/i.test(lower)) return 20;        // Names → highest
-        if (/vietphrase/i.test(lower)) return 10;   // VietPhrase → standard
-        if (/lacviet/i.test(lower)) return 8;        // LacViet → lower
-        if (/phienam/i.test(lower)) return 5;        // PhienAm → lowest import
-        return 10;                                    // default
-    }
+    var importPriority = document.getElementById('importPriority');
 
     dictFileInput.addEventListener('change', function () {
         const files = dictFileInput.files;
         if (!files.length) return;
+        var pri = parseInt(importPriority.value, 10) || 10;
         let totalImported = 0;
         let pending = files.length;
         for (let i = 0; i < files.length; i++) {
@@ -277,7 +270,6 @@
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     var text = decodeBuffer(e.target.result);
-                    var pri = guessPriority(file.name);
                     DictEngine.importDictText(text, pri, file.name).then(function (count) {
                         totalImported += count;
                         pending--;

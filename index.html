@@ -671,6 +671,15 @@
             color: var(--accent-2);
         }
         .btn-import:hover { background: rgba(124,108,240,0.22); }
+        #importPriority {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: var(--font);
+        }
 
         /* ---- Dict Manager panel ---- */
         .dm-source-item {
@@ -1031,6 +1040,12 @@
                 <div class="dict-body hidden" id="dictBody">
                     <div class="dict-stats" id="dictStats">Loading...</div>
                     <div class="dict-actions">
+                        <select id="importPriority" title="Dictionary priority">
+                            <option value="20">Names (20)</option>
+                            <option value="10" selected>VietPhrase (10)</option>
+                            <option value="8">LacViet (8)</option>
+                            <option value="5">PhienAm (5)</option>
+                        </select>
                         <button class="btn-import" id="btnImportDict">Import .txt</button>
                     </div>
                     <input type="file" id="dictFileInput" accept=".txt" multiple style="display:none">
