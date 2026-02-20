@@ -1,5 +1,18 @@
 // ===== Webapp UI Logic =====
 (function () {
+    // --- Theme toggle ---
+    var btnTheme = document.getElementById('btnTheme');
+    var savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    btnTheme.textContent = savedTheme === 'light' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    btnTheme.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        btnTheme.textContent = next === 'light' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+        localStorage.setItem('theme', next);
+    });
+
     // Elements
     const tabText = document.getElementById('tabText');
     const tabFile = document.getElementById('tabFile');

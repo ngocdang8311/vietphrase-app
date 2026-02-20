@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0a0a12">
+    <meta name="theme-color" content="#0a0a12" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f5f3f0" media="(prefers-color-scheme: light)">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>VietPhrase - Dịch Trung Việt Offline | Chinese Vietnamese Translator</title>
@@ -55,6 +56,7 @@
     }
     </script>
 
+    <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -92,6 +94,69 @@
             --shadow-glow: 0 0 30px var(--accent-glow);
             --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* ---- Light theme ---- */
+        [data-theme="light"] {
+            --bg: #f5f3f0;
+            --bg-subtle: #eae7e3;
+            --surface: rgba(0,0,0,0.03);
+            --surface-hover: rgba(0,0,0,0.06);
+            --surface-card: rgba(255,255,255,0.7);
+            --surface-card-hover: rgba(255,255,255,0.85);
+            --border: rgba(0,0,0,0.08);
+            --border-focus: rgba(99,102,241,0.4);
+            --text: #1a1a2e;
+            --text-secondary: rgba(26,26,46,0.6);
+            --text-muted: rgba(26,26,46,0.35);
+            --accent: #6366f1;
+            --accent-2: #a855f7;
+            --accent-glow: rgba(99,102,241,0.15);
+            --green: #16a34a;
+            --green-soft: rgba(22,163,74,0.1);
+            --orange: #ea580c;
+            --orange-soft: rgba(234,88,12,0.1);
+            --gradient-btn: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            --gradient-btn-hover: linear-gradient(135deg, #5558e8, #7c4fef, #9945ef);
+            --gradient-green: linear-gradient(135deg, #16a34a, #22c55e);
+            --shadow: 0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px var(--border);
+            --shadow-glow: 0 0 20px var(--accent-glow);
+        }
+        [data-theme="light"] .bg-orb { opacity: 0.08; }
+        [data-theme="light"] .bg-noise { opacity: 0.015; }
+        [data-theme="light"] .hero-banner {
+            background: linear-gradient(160deg, rgba(99,102,241,0.06) 0%, rgba(168,85,247,0.04) 50%, rgba(236,72,153,0.03) 100%);
+            border-color: rgba(0,0,0,0.06);
+        }
+        [data-theme="light"] .hero-banner::before {
+            background: linear-gradient(135deg, rgba(99,102,241,0.35) 0%, rgba(168,85,247,0.25) 40%, rgba(236,72,153,0.2) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        [data-theme="light"] .hero-title {
+            background: linear-gradient(135deg, #1a1a2e 0%, var(--accent) 50%, var(--accent-2) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        [data-theme="light"] .glass-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(12px);
+        }
+        [data-theme="light"] .tab { color: var(--text-secondary); }
+        [data-theme="light"] .tab.active { color: #fff; }
+        [data-theme="light"] .col-label-zh { color: rgba(234,88,12,0.7); }
+        [data-theme="light"] .col-label-vi { color: rgba(22,163,74,0.7); }
+        [data-theme="light"] .output-toggle-btn.active {
+            background: rgba(22,163,74,0.1);
+            color: rgba(22,163,74,0.9);
+        }
+        [data-theme="light"] .dm-source-item,
+        [data-theme="light"] .dm-sample-item {
+            background: rgba(255,255,255,0.5);
+        }
+        [data-theme="light"] .dm-sample-btn.done {
+            background: rgba(22,163,74,0.1);
+            color: rgba(22,163,74,0.9);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -232,6 +297,22 @@
             gap: 10px;
             align-items: center;
         }
+
+        #btnTheme {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s var(--ease);
+            line-height: 1;
+        }
+        #btnTheme:hover { background: var(--surface-card-hover); }
 
         #btnInstall {
             display: inline-flex;
@@ -888,6 +969,7 @@
             <div class="hero-title">VietPhrase</div>
             <div class="hero-sub">Chinese &#x2192; Vietnamese Translator</div>
             <div class="header-actions">
+                <button id="btnTheme" title="Toggle theme">&#x1F319;</button>
                 <button id="btnInstall" class="hidden">Install App</button>
             </div>
         </div>
