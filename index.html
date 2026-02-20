@@ -181,21 +181,26 @@
             background: linear-gradient(160deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.06) 50%, rgba(236,72,153,0.04) 100%);
             border: 1px solid rgba(130,120,255,0.1);
         }
-        .hero-ascii {
+        .hero-dragon {
             font-family: 'Courier New', monospace;
-            font-size: 10px;
-            line-height: 1.2;
-            color: rgba(130,120,255,0.35);
+            font-size: 12px;
+            line-height: 1.15;
             white-space: pre;
             letter-spacing: 0.5px;
-            margin-bottom: 6px;
-            animation: asciiGlow 4s ease-in-out infinite alternate;
+            margin-bottom: 8px;
             user-select: none;
         }
-        @keyframes asciiGlow {
-            0% { color: rgba(130,120,255,0.25); text-shadow: none; }
-            50% { color: rgba(168,85,247,0.45); text-shadow: 0 0 20px rgba(168,85,247,0.15); }
-            100% { color: rgba(236,72,153,0.35); text-shadow: 0 0 30px rgba(236,72,153,0.1); }
+        .d-horn { color: #f59e0b; text-shadow: 0 0 8px rgba(245,158,11,0.3); }
+        .d-face { color: rgba(168,140,255,0.7); }
+        .d-eye { color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.5); animation: eyeGlow 3s ease-in-out infinite alternate; }
+        .d-nose { color: #f97316; text-shadow: 0 0 8px rgba(249,115,22,0.3); }
+        .d-mouth { color: #e2e8f0; text-shadow: 0 0 6px rgba(226,232,240,0.2); }
+        .d-mane { color: rgba(99,102,241,0.4); }
+        .d-whisker { color: rgba(99,102,241,0.25); }
+        @keyframes eyeGlow {
+            0% { color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.5); }
+            50% { color: #fbbf24; text-shadow: 0 0 18px rgba(251,191,36,0.6); }
+            100% { color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.5); }
         }
         .hero-title {
             font-size: 26px;
@@ -843,7 +848,7 @@
         @media (max-width: 700px) {
             .app { padding: 16px; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
             .hero-banner { padding: 12px 10px 10px; margin-bottom: 16px; }
-            .hero-ascii { font-size: 6px; letter-spacing: 0px; margin-bottom: 4px; }
+            .hero-dragon { font-size: 8px; letter-spacing: 0px; margin-bottom: 4px; }
             .hero-title { font-size: 20px; }
             .hero-sub { font-size: 10px; letter-spacing: 1.5px; }
             .translate-area { grid-template-columns: 1fr; }
@@ -874,22 +879,18 @@
 
     <div class="app">
         <div class="hero-banner">
-<pre class="hero-ascii">            .  *  . `:_         _---~~(~~-_.
-      )  *  `)  .  *  ) )     _{        )   )
-     (  .  *  (  *  .( (     /   ~--._ ,)--`
-      ) *  )  . )  *  ) )   |        { }
-     (  . (  * (  .  ( (    \   _~-_~`\`~~-.
-      ) *  )  )  *  ) )     `.     { }     )
-     (  . (  (  .  ( (      . `~-._,,,,,/~`-._
-      ) * |)  ) *  ) )      .      )/     `~-.
-     ( .  |( (  .  ( (       . ,__/           )
-      )  *| ) )*  .) )        /       _-~`~`-}
-     ( . *|(  ( .  ( (        |      /        |
-    ,.~---/ ) *)  .) ) `~-.   |     |    __,--|
-   {       |( ( .  ( (     )  |     |.-~`    /
-    `~-.,__|.) ) *  ) ) ~-`   |    /`  ~  ,/
-            |(  ( .  ( (      ~--~`  `~~-`
-             ) *) )  .)`</pre>
+<div class="hero-dragon"><span class="d-horn">         }   {  </span>
+<span class="d-horn">        /_} {_\ </span>
+<span class="d-horn">       / /} {\ \</span>
+<span class="d-mane">    ~~</span><span class="d-face">(  / } { \  )</span><span class="d-mane">~~</span>
+<span class="d-mane">  ~~~</span><span class="d-face"> \  _} {_  / </span><span class="d-mane">~~~</span>
+<span class="d-face">      \\|</span><span class="d-eye"> (o o) </span><span class="d-face">|//</span>
+<span class="d-mane">   ~~</span><span class="d-face"> \\\</span><span class="d-nose">  &lt;&gt;  </span><span class="d-face">/// </span><span class="d-mane">~~</span>
+<span class="d-face">      \\</span><span class="d-mouth"> {VVVV} </span><span class="d-face">//</span>
+<span class="d-mane">    ~~</span><span class="d-face"> \`</span><span class="d-mouth"> `""""` </span><span class="d-face">`/ </span><span class="d-mane">~~</span>
+<span class="d-whisker">    ~/`  </span><span class="d-face">`------`</span><span class="d-whisker">  `\~</span>
+<span class="d-whisker">  ~/  ~~    ~~    ~~  \~</span>
+<span class="d-whisker"> ~/ ~~  ~~  ~~  ~~  ~~ \~</span></div>
             <div class="hero-title">VietPhrase</div>
             <div class="hero-sub">Chinese &#x2192; Vietnamese Translator</div>
             <div class="header-actions">
