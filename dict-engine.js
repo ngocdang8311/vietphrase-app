@@ -69,9 +69,28 @@
         return entries;
     }
 
-    // Capitalize first letter of each sentence (after .!?。！？ or newline)
+    // Chinese → Latin punctuation normalization
+    var CN_PUNCT_MAP = {
+        '，': ',', '。': '.', '？': '?', '！': '!', '；': ';', '：': ':',
+        '「': '\u201C', '」': '\u201D', '『': '\u2018', '』': '\u2019',
+        '《': '\u00AB', '》': '\u00BB', '（': '(', '）': ')',
+        '【': '[', '】': ']', '〈': '<', '〉': '>',
+        '、': ',', '～': '~'
+    };
+    var CN_PUNCT_RE = /[，。？！；：「」『』《》（）【】〈〉、～]/g;
+
+    function normalizePunctuation(str) {
+        // Double patterns first: …… → ... and —— → —
+        str = str.replace(/……/g, '...').replace(/——/g, '\u2014');
+        // Single ellipsis
+        str = str.replace(/…/g, '...');
+        // Single char replacements
+        return str.replace(CN_PUNCT_RE, function (ch) { return CN_PUNCT_MAP[ch] || ch; });
+    }
+
+    // Capitalize first letter of each sentence (after .!? or newline)
     function capitalizeSentences(str) {
-        return str.replace(/(^|[.!?。！？\n]\s*)([a-zàáạảãăắằặẳẵâấầậẩẫđèéẹẻẽêếềệểễìíịỉĩòóọỏõôốồộổỗơớờợởỡùúụủũưứừựửữỳýỵỷỹ])/gu, function (m, pre, ch) {
+        return str.replace(/(^|[.!?\n]\s*)([a-zàáạảãăắằặẳẵâấầậẩẫđèéẹẻẽêếềệểễìíịỉĩòóọỏõôốồộổỗơớờợởỡùúụủũưứừựửữỳýỵỷỹ])/gu, function (m, pre, ch) {
             return pre + ch.toUpperCase();
         });
     }
@@ -95,7 +114,11 @@
             if (lastMatch > i) { result.push(lastValue); i = lastMatch; }
             else { result.push(text[i]); i++; }
         }
-        var out = result.join(' ').replace(/ {2,}/g, ' ').replace(/ ([.,!?;:])/g, '$1').trim();
+        var out = result.join(' ').replace(/ {2,}/g, ' ');
+        out = normalizePunctuation(out);
+        out = out.replace(/ ([.,!?;:\)\]\u00BB\u201D\u2019>])/g, '$1');  // space before closing punct
+        out = out.replace(/([\(\[\u00AB\u201C\u2018<]) /g, '$1');  // space after opening punct
+        out = out.replace(/ {2,}/g, ' ').trim();
         return capitalizeSentences(out);
     }
 
@@ -321,7 +344,11 @@
                 result.push(text.substring(s, i));
             }
         }
-        var out = result.join(' ').replace(/ {2,}/g, ' ').replace(/ ([.,!?;:，。！？；：、])/g, '$1').trim();
+        var out = result.join(' ').replace(/ {2,}/g, ' ');
+        out = normalizePunctuation(out);
+        out = out.replace(/ ([.,!?;:\)\]\u00BB\u201D\u2019>])/g, '$1');
+        out = out.replace(/([\(\[\u00AB\u201C\u2018<]) /g, '$1');
+        out = out.replace(/ {2,}/g, ' ').trim();
         return capitalizeSentences(out);
     }
 
