@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v15';
+const CACHE_NAME = 'cnvn-dict-v16';
 const APP_ASSETS = [
     './',
     './index.html',
@@ -56,8 +56,9 @@ self.addEventListener('fetch', function (event) {
         caches.match(request, { ignoreSearch: true }).then(function (cached) {
             if (cached) return cached;
             return fetch(request).then(function (response) {
-                // Only cache successful responses
-                if (response.ok) {
+                // Only cache successful, non-redirected responses
+                // Safari rejects redirected responses from SW for navigation requests
+                if (response.ok && !response.redirected) {
                     var clone = response.clone();
                     caches.open(CACHE_NAME).then(function (cache) {
                         cache.put(request, clone);
