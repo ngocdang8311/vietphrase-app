@@ -286,14 +286,15 @@
                     }
                 }
                 var reader = new FileReader();
-                if (file.name.match(/\.epub$/i)) {
-                    // EPUB import via foliate-js bridge
+                var EBOOK_RE = /\.(epub|mobi|azw3?|fb2(\.zip)?|fbz|cbz)$/i;
+                if (file.name.match(EBOOK_RE)) {
+                    // Ebook import via foliate-js bridge (EPUB, MOBI, FB2, CBZ)
                     reader.onload = function (ev) {
                         var ab = ev.target.result;
                         waitForBridge().then(function () {
-                            return EpubBridge.parseMetadata(ab);
+                            return EpubBridge.parseMetadata(ab, file.name);
                         }).then(function (parsed) {
-                            var title = parsed.metadata.title || file.name.replace(/\.epub$/i, '');
+                            var title = parsed.metadata.title || file.name.replace(/\.[^.]+$/, '');
                             // Build spine from toc if available, otherwise generate from section count
                             var spine;
                             if (parsed.toc.length > 0) {
@@ -307,15 +308,16 @@
                             var epubMeta = {
                                 metadata: parsed.metadata,
                                 toc: parsed.toc,
-                                spine: spine
+                                spine: spine,
+                                filename: file.name
                             };
                             return ReaderLib.importEpubBook(title, ab, epubMeta);
                         }).then(function () {
                             pending--;
                             if (pending === 0) renderLibrary();
                         }).catch(function (err) {
-                            console.error('EPUB import error:', err);
-                            alert('L\u1ED7i import EPUB: ' + err.message);
+                            console.error('Ebook import error:', err);
+                            alert('L\u1ED7i import: ' + err.message);
                             pending--;
                             if (pending === 0) renderLibrary();
                         });
@@ -503,7 +505,8 @@
         if (epubView) { epubView.close(); epubView.remove(); epubView = null; }
 
         waitForBridge().then(function () {
-            var file = new File([content], 'book.epub', { type: 'application/epub+zip' });
+            var fname = book.filename || (book.title + '.epub');
+            var file = new File([content], fname, { type: 'application/octet-stream' });
             var view = EpubBridge.createView();
             epubView = view;
             currentBook = book;

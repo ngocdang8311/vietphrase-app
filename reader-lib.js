@@ -150,6 +150,7 @@
             chapters: { hasChapters: true, chapters: tocChapters },
             epubSpine: epubMeta.spine
         };
+        if (epubMeta.filename) meta.filename = epubMeta.filename;
         if (epubMeta.metadata && epubMeta.metadata.author) {
             meta.author = epubMeta.metadata.author;
         }
@@ -260,6 +261,7 @@
                         if (b.driveFileId) entry.driveFileId = b.driveFileId;
                         if (b.epubSpine) entry.epubSpine = b.epubSpine;
                         if (b.author) entry.author = b.author;
+                        if (b.filename) entry.filename = b.filename;
                         result.push(entry);
                     }
                     result.reverse();

@@ -46,8 +46,9 @@ window.EpubBridge = {
     ready: true,
 
     // Extract metadata without rendering (for import)
-    async parseMetadata(arrayBuffer) {
-        var file = new File([arrayBuffer], 'book.epub', { type: 'application/epub+zip' });
+    // filename is used by makeBook to detect format (cbz, fb2, fbz by extension)
+    async parseMetadata(arrayBuffer, filename) {
+        var file = new File([arrayBuffer], filename || 'book.epub', { type: 'application/octet-stream' });
         var book = await makeBook(file);
         var metadata = extractMeta(book);
         var toc = flattenToc(book.toc);
