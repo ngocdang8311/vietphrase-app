@@ -889,9 +889,8 @@
 
     btnExportBackup.addEventListener('click', function () {
         backupStatus.textContent = '\u0110ang xu\u1EA5t backup...';
-        BackupManager.exportBackup().then(function (json) {
-            var date = new Date().toISOString().slice(0, 10);
-            VP.downloadFile('vietphrase-backup-' + date + '.json', json, 'application/json');
+        BackupManager.exportBackup().then(function (result) {
+            VP.downloadFile(result.filename, result.blob, 'application/zip');
             backupStatus.textContent = '\u0110\u00E3 xu\u1EA5t backup th\u00E0nh c\u00F4ng!';
         }).catch(function (err) {
             backupStatus.textContent = 'L\u1ED7i: ' + err.message;
@@ -903,22 +902,18 @@
         var file = backupFileInput.files[0];
         if (!file) return;
         backupStatus.textContent = '\u0110ang nh\u1EADp backup...';
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-            BackupManager.importBackup(ev.target.result).then(function (summary) {
-                var msg = 'Kh\u00F4i ph\u1EE5c: ';
-                var parts = [];
-                if (summary.books) parts.push(summary.books + ' s\u00E1ch');
-                if (summary.phrases) parts.push(summary.phrases + ' c\u1EE5m t\u1EEB');
-                if (summary.dicts) parts.push(summary.dicts + ' t\u1EEB \u0111i\u1EC3n');
-                if (summary.settings) parts.push('c\u00E0i \u0111\u1EB7t');
-                backupStatus.textContent = msg + (parts.length ? parts.join(', ') : 'kh\u00F4ng c\u00F3 d\u1EEF li\u1EC7u');
-                renderLibrary();
-            }).catch(function (err) {
-                backupStatus.textContent = 'L\u1ED7i: ' + err.message;
-            });
-        };
-        reader.readAsText(file);
+        BackupManager.importBackup(file).then(function (summary) {
+            var msg = 'Kh\u00F4i ph\u1EE5c: ';
+            var parts = [];
+            if (summary.books) parts.push(summary.books + ' s\u00E1ch');
+            if (summary.phrases) parts.push(summary.phrases + ' c\u1EE5m t\u1EEB');
+            if (summary.dicts) parts.push(summary.dicts + ' t\u1EEB \u0111i\u1EC3n');
+            if (summary.settings) parts.push('c\u00E0i \u0111\u1EB7t');
+            backupStatus.textContent = msg + (parts.length ? parts.join(', ') : 'kh\u00F4ng c\u00F3 d\u1EEF li\u1EC7u');
+            renderLibrary();
+        }).catch(function (err) {
+            backupStatus.textContent = 'L\u1ED7i: ' + err.message;
+        });
         backupFileInput.value = '';
     });
 
