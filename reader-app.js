@@ -17,6 +17,46 @@
         localStorage.setItem('vp_settings_ts', String(Date.now()));
     });
 
+    // --- Tab switching ---
+    var mainTabBar = document.getElementById('mainTabBar');
+    var crawlerView = document.getElementById('crawlerView');
+    var libraryToolbar = document.getElementById('libraryToolbar');
+    var crawlerLoaded = false;
+
+    if (mainTabBar) {
+        mainTabBar.addEventListener('click', function (e) {
+            var btn = e.target.closest('.tab-btn');
+            if (!btn) return;
+            var tab = btn.dataset.tab;
+            // Update active tab button
+            var btns = mainTabBar.querySelectorAll('.tab-btn');
+            for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i] === btn);
+
+            if (tab === 'library') {
+                crawlerView.classList.add('hidden');
+                libraryToolbar.classList.remove('hidden');
+                document.getElementById('bookGrid').classList.remove('hidden');
+                renderLibrary();
+            } else if (tab === 'crawler') {
+                libraryToolbar.classList.add('hidden');
+                document.getElementById('bookGrid').classList.add('hidden');
+                document.getElementById('emptyState').classList.add('hidden');
+                crawlerView.classList.remove('hidden');
+                if (!crawlerLoaded) {
+                    crawlerLoaded = true;
+                    var s = document.createElement('script');
+                    s.src = 'crawler.js';
+                    s.onload = function () {
+                        if (window.CrawlerEngine) {
+                            CrawlerEngine.init(document.getElementById('crawlerRoot'));
+                        }
+                    };
+                    document.head.appendChild(s);
+                }
+            }
+        });
+    }
+
     // --- Elements ---
     var libraryView = document.getElementById('libraryView');
     var bookGrid = document.getElementById('bookGrid');

@@ -460,6 +460,194 @@
             overflow: hidden;
         }
 
+        /* ===== Tab Bar ===== */
+        .tab-bar {
+            display: flex; gap: 4px;
+            padding: 4px; margin-bottom: 20px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; width: fit-content;
+        }
+        .tab-btn {
+            padding: 8px 20px; border: none; border-radius: 9px;
+            font-family: var(--font); font-size: 13px; font-weight: 600;
+            color: var(--text-secondary); background: transparent;
+            cursor: pointer; transition: all 0.2s var(--ease);
+        }
+        .tab-btn:hover { color: var(--text); background: var(--surface-hover); }
+        .tab-btn.active {
+            background: var(--gradient-btn); color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        /* ===== Crawler Styles ===== */
+        .crawler-shell { min-height: 60vh; }
+        .crawler-topbar {
+            display: flex; gap: 8px; margin-bottom: 16px;
+            align-items: center; flex-wrap: wrap;
+        }
+        .crawler-url-input {
+            flex: 1; min-width: 200px; padding: 10px 14px;
+            border-radius: 10px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text);
+            font-family: var(--font); font-size: 13px;
+            outline: none; transition: border-color 0.2s;
+        }
+        .crawler-url-input:focus { border-color: var(--border-focus); }
+        .crawler-url-input::placeholder { color: var(--text-muted); }
+        .crawler-site-select {
+            padding: 10px 12px; border-radius: 10px;
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--text); font-size: 12px; font-family: var(--font);
+            cursor: pointer;
+        }
+        .crawler-back-btn { padding: 8px 12px !important; }
+
+        .crawler-main {
+            display: flex; gap: 16px; min-height: 400px;
+        }
+        .crawler-sidebar {
+            width: 260px; min-width: 220px; flex-shrink: 0;
+            background: var(--surface-card); border: 1px solid var(--border);
+            border-radius: var(--radius); display: flex; flex-direction: column;
+            max-height: 70vh; position: sticky; top: 20px;
+        }
+        .crawler-sidebar-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid var(--border);
+            font-size: 13px; font-weight: 700;
+        }
+        .crawler-sidebar-close { display: none; }
+        .crawler-chapter-list {
+            flex: 1; overflow-y: auto; padding: 6px;
+        }
+        .crawler-ch-item {
+            padding: 8px 12px; border-radius: 8px;
+            font-size: 12px; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.15s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .crawler-ch-item:hover { background: var(--surface-hover); color: var(--text); }
+        .crawler-ch-item.active {
+            background: rgba(124,108,240,0.12); color: var(--accent-2); font-weight: 600;
+        }
+        .crawler-ch-saved { color: var(--green); font-size: 11px; margin-left: 4px; flex-shrink: 0; }
+        .crawler-content-area { flex: 1; min-width: 0; }
+        .crawler-content {
+            max-width: 760px; margin: 0 auto;
+            font-family: var(--font-read); font-size: 18px; line-height: 1.8;
+            color: var(--text); word-wrap: break-word;
+        }
+        .crawler-content p { margin-bottom: 0.8em; }
+        .crawler-content p:empty { margin-bottom: 0.4em; }
+        .crawler-content p[data-zh] { cursor: help; }
+        .crawler-content p[data-zh]:hover { background: var(--surface); border-radius: 4px; }
+
+        .crawler-chapter-title {
+            font-size: 20px; font-weight: 700; margin-bottom: 16px;
+            color: var(--text); padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .crawler-index-title {
+            font-size: 22px; font-weight: 800; margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .crawler-index-info {
+            font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
+        }
+        .crawler-index-list {
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .crawler-index-link {
+            display: block; padding: 10px 14px;
+            font-size: 14px; color: var(--text-secondary);
+            text-decoration: none; border-radius: 8px;
+            transition: all 0.15s;
+        }
+        .crawler-index-link:hover { background: var(--surface-hover); color: var(--accent-2); }
+
+        .crawler-bottombar {
+            display: flex; gap: 8px; align-items: center;
+            justify-content: center; padding: 16px 0; margin-top: 8px;
+            border-top: 1px solid var(--border); flex-wrap: wrap;
+        }
+
+        .crawler-loading {
+            display: flex; align-items: center; gap: 10px;
+            justify-content: center; padding: 60px 20px;
+            color: var(--text-secondary); font-size: 14px;
+        }
+        .crawler-spinner {
+            width: 20px; height: 20px; border: 2px solid var(--border);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: syncSpin 0.8s linear infinite;
+        }
+
+        /* Novel cards */
+        .crawler-novels-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .crawler-novels-title { font-size: 18px; font-weight: 700; }
+        .crawler-novel-card {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 20px; margin-bottom: 8px;
+            background: var(--surface-card); border: 1px solid var(--border);
+            border-radius: var(--radius); transition: all 0.2s var(--ease);
+        }
+        .crawler-novel-card:hover { border-color: var(--border-focus); }
+        .crawler-novel-info { flex: 1; min-width: 0; }
+        .crawler-novel-name {
+            font-size: 15px; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .crawler-novel-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+        .crawler-novel-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* Edit modal */
+        .crawler-edit-modal {
+            position: fixed; inset: 0; z-index: 80;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .crawler-edit-modal.hidden { display: none !important; }
+        .crawler-edit-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+        }
+        .crawler-edit-box {
+            position: relative; z-index: 1;
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px;
+            width: 90vw; max-width: 900px; max-height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .crawler-edit-header {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 15px; font-weight: 700; margin-bottom: 12px;
+        }
+        .crawler-edit-body {
+            flex: 1; display: flex; gap: 12px;
+            min-height: 0; overflow: hidden;
+        }
+        .crawler-edit-col { flex: 1; display: flex; flex-direction: column; }
+        .crawler-edit-col label {
+            font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 6px;
+        }
+        .crawler-edit-col textarea {
+            flex: 1; min-height: 300px; padding: 12px;
+            border-radius: 10px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text);
+            font-family: var(--font-read); font-size: 14px; line-height: 1.6;
+            resize: none;
+        }
+        .crawler-edit-col textarea:focus { border-color: var(--border-focus); outline: none; }
+        .crawler-edit-footer {
+            display: flex; gap: 8px; justify-content: flex-end;
+            margin-top: 12px;
+        }
+
         /* Responsive */
         @media (max-width: 700px) {
             .app { padding: 16px; padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
@@ -469,6 +657,19 @@
             .book-icon { font-size: 26px; }
             .reader-content { padding: 24px 18px 60px; font-size: 17px; }
             .reader-bottomnav .btn { min-width: 80px; font-size: 12px; padding: 8px 12px; }
+            /* Crawler mobile */
+            .crawler-main { flex-direction: column; }
+            .crawler-sidebar {
+                position: fixed; top: 0; left: 0; bottom: 0;
+                width: 280px; max-width: 85vw; z-index: 65;
+                border-radius: 0; border-right: 1px solid var(--border);
+                transform: translateX(-100%); transition: transform 0.3s var(--ease);
+                max-height: none;
+            }
+            .crawler-sidebar:not(.hidden) { transform: translateX(0); }
+            .crawler-sidebar.hidden { transform: translateX(-100%); }
+            .crawler-sidebar-close { display: block; }
+            .crawler-edit-body { flex-direction: column; }
         }
     </style>
 </head>
@@ -490,7 +691,12 @@
             <button class="header-btn" id="btnTheme" title="Toggle theme">&#x1F319;</button>
         </div>
 
-        <div class="toolbar">
+        <div class="tab-bar" id="mainTabBar">
+            <button class="tab-btn active" data-tab="library">Th&#432; vi&#7879;n</button>
+            <button class="tab-btn" data-tab="crawler">Duy&#7879;t truy&#7879;n</button>
+        </div>
+
+        <div class="toolbar" id="libraryToolbar">
             <button class="btn btn-accent" id="btnImportBook">Import s&#225;ch</button>
             <input type="file" id="bookFileInput" accept=".txt,.html,.htm,.epub,.mobi,.azw,.azw3,.fb2,.fbz,.cbz" multiple style="display:none">
             <span class="storage-info" id="storageInfo"></span>
@@ -502,6 +708,11 @@
             <div class="empty-icon">&#x1F4DA;</div>
             <div class="empty-title">Ch&#432;a c&#243; s&#225;ch n&#224;o</div>
             <div class="empty-sub">Import file .txt, .html, .epub, .mobi, .fb2, .cbz &#273;&#7875; b&#7855;t &#273;&#7847;u &#273;&#7885;c</div>
+        </div>
+
+        <!-- Crawler View (lazy-loaded) -->
+        <div class="hidden" id="crawlerView">
+            <div id="crawlerRoot"></div>
         </div>
 
         <footer style="text-align:center;padding:24px 0 12px;font-size:12px;color:var(--text-muted)">
@@ -622,6 +833,7 @@
     <script src="sync-common.js"></script>
     <script src="cloud-sync.js"></script>
     <script src="github-sync.js"></script>
+    <script src="dict-engine.js"></script>
     <script src="backup.js"></script>
     <script src="reader-app.js"></script>
 </body>
