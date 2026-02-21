@@ -541,6 +541,37 @@
                             '<option value="auto">T\u1EF1 nh\u1EADn di\u1EC7n</option>' +
                         '</select>' +
                     '</div>' +
+                    '<div class="reader-settings" id="crawlerSettingsBar">' +
+                        '<div class="settings-group">' +
+                            '<label>C\u1EE1</label>' +
+                            '<button class="settings-btn" id="crawlerBtnFontDown">A-</button>' +
+                            '<span class="settings-val" id="crawlerValFontSize">18</span>' +
+                            '<button class="settings-btn" id="crawlerBtnFontUp">A+</button>' +
+                        '</div>' +
+                        '<div class="settings-sep"></div>' +
+                        '<div class="settings-group">' +
+                            '<label>D\u00E3n</label>' +
+                            '<button class="settings-btn" id="crawlerBtnLineDown">-</button>' +
+                            '<span class="settings-val" id="crawlerValLineHeight">1.8</span>' +
+                            '<button class="settings-btn" id="crawlerBtnLineUp">+</button>' +
+                        '</div>' +
+                        '<div class="settings-sep"></div>' +
+                        '<div class="settings-group">' +
+                            '<label>Font</label>' +
+                            '<select class="font-select" id="crawlerSelFont">' +
+                                '<option value="sans">Sans-serif</option>' +
+                                '<option value="serif">Serif</option>' +
+                            '</select>' +
+                        '</div>' +
+                        '<div class="settings-sep"></div>' +
+                        '<div class="settings-group">' +
+                            '<label>Theme</label>' +
+                            '<select class="theme-select" id="crawlerSelTheme">' +
+                                '<option value="default">Auto</option>' +
+                                '<option value="sepia">Sepia</option>' +
+                            '</select>' +
+                        '</div>' +
+                    '</div>' +
                     '<div class="crawler-main">' +
                         '<div class="crawler-sidebar hidden" id="crawlerSidebar">' +
                             '<div class="crawler-sidebar-header">' +
@@ -630,6 +661,16 @@
         els.saveBtn = rootEl.querySelector('#crawlerSaveBtn');
         els.toggleSidebar = rootEl.querySelector('#crawlerToggleSidebar');
         els.bottombar = rootEl.querySelector('#crawlerBottombar');
+        // Cache DOM refs — Settings bar
+        els.settingsBar = rootEl.querySelector('#crawlerSettingsBar');
+        els.valFontSize = rootEl.querySelector('#crawlerValFontSize');
+        els.valLineHeight = rootEl.querySelector('#crawlerValLineHeight');
+        els.selFont = rootEl.querySelector('#crawlerSelFont');
+        els.selTheme = rootEl.querySelector('#crawlerSelTheme');
+        els.btnFontDown = rootEl.querySelector('#crawlerBtnFontDown');
+        els.btnFontUp = rootEl.querySelector('#crawlerBtnFontUp');
+        els.btnLineDown = rootEl.querySelector('#crawlerBtnLineDown');
+        els.btnLineUp = rootEl.querySelector('#crawlerBtnLineUp');
         // Cache DOM refs — Edit modal
         els.editModal = rootEl.querySelector('#crawlerEditModal');
         els.editZh = rootEl.querySelector('#crawlerEditZh');
@@ -649,17 +690,40 @@
         applyReaderSettings();
     }
 
-    function applyReaderSettings() {
+    function loadSettings() {
         try {
             var s = JSON.parse(localStorage.getItem('readerSettings'));
-            if (s && els.content) {
-                els.content.style.fontSize = (s.fontSize || 18) + 'px';
-                els.content.style.lineHeight = s.lineHeight || 1.8;
-                els.content.style.fontFamily = s.fontFamily === 'serif'
-                    ? "'Noto Serif', 'Georgia', serif"
-                    : "var(--font)";
-            }
-        } catch (e) {}
+            return {
+                fontSize: (s && s.fontSize) || 18,
+                lineHeight: (s && s.lineHeight) || 1.8,
+                fontFamily: (s && s.fontFamily) || 'sans',
+                readerTheme: (s && s.readerTheme) || 'default'
+            };
+        } catch (e) {
+            return { fontSize: 18, lineHeight: 1.8, fontFamily: 'sans', readerTheme: 'default' };
+        }
+    }
+
+    function saveSettings(s) {
+        localStorage.setItem('readerSettings', JSON.stringify(s));
+        localStorage.setItem('vp_settings_ts', String(Date.now()));
+    }
+
+    function applyReaderSettings() {
+        var s = loadSettings();
+        if (els.content) {
+            els.content.style.fontSize = s.fontSize + 'px';
+            els.content.style.lineHeight = s.lineHeight;
+            els.content.style.fontFamily = s.fontFamily === 'serif'
+                ? "'Noto Serif', 'Georgia', serif"
+                : "var(--font)";
+        }
+        if (els.valFontSize) els.valFontSize.textContent = s.fontSize;
+        if (els.valLineHeight) els.valLineHeight.textContent = s.lineHeight.toFixed(1);
+        if (els.selFont) els.selFont.value = s.fontFamily;
+        if (els.selTheme) els.selTheme.value = s.readerTheme;
+        var browse = rootEl.querySelector('#crawlerBrowse');
+        if (browse) browse.setAttribute('data-reader-theme', s.readerTheme);
     }
 
     function bindEvents() {
@@ -809,6 +873,34 @@
         els.editClose.addEventListener('click', function () { els.editModal.classList.add('hidden'); });
         els.editCancel.addEventListener('click', function () { els.editModal.classList.add('hidden'); });
         els.editSave.addEventListener('click', saveEditedChapter);
+
+        // Reader settings controls
+        els.btnFontDown.addEventListener('click', function () {
+            var s = loadSettings();
+            if (s.fontSize > 14) { s.fontSize -= 2; saveSettings(s); applyReaderSettings(); }
+        });
+        els.btnFontUp.addEventListener('click', function () {
+            var s = loadSettings();
+            if (s.fontSize < 28) { s.fontSize += 2; saveSettings(s); applyReaderSettings(); }
+        });
+        els.btnLineDown.addEventListener('click', function () {
+            var s = loadSettings();
+            if (s.lineHeight > 1.4) { s.lineHeight = Math.round((s.lineHeight - 0.1) * 10) / 10; saveSettings(s); applyReaderSettings(); }
+        });
+        els.btnLineUp.addEventListener('click', function () {
+            var s = loadSettings();
+            if (s.lineHeight < 2.4) { s.lineHeight = Math.round((s.lineHeight + 0.1) * 10) / 10; saveSettings(s); applyReaderSettings(); }
+        });
+        els.selFont.addEventListener('change', function () {
+            var s = loadSettings();
+            s.fontFamily = els.selFont.value;
+            saveSettings(s); applyReaderSettings();
+        });
+        els.selTheme.addEventListener('change', function () {
+            var s = loadSettings();
+            s.readerTheme = els.selTheme.value;
+            saveSettings(s); applyReaderSettings();
+        });
 
         // Hover tooltip for original Chinese
         els.content.addEventListener('mouseover', function (e) {

@@ -93,6 +93,40 @@
             --accent: #7c5e3c;
             --accent-2: #9b6b3a;
         }
+        /* Sepia theme for crawler browse view */
+        #crawlerBrowse[data-reader-theme="sepia"] .crawler-content-area {
+            background: #f4ecd8;
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .crawler-content {
+            color: #5b4636;
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .crawler-chapter-title {
+            color: #5b4636;
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .reader-settings {
+            background: #f4ecd8;
+            border-color: rgba(91,70,54,0.15);
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .settings-group {
+            color: rgba(91,70,54,0.7);
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .settings-btn {
+            background: rgba(91,70,54,0.08);
+            border-color: rgba(91,70,54,0.15);
+            color: #5b4636;
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .settings-val {
+            color: #5b4636;
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .settings-sep {
+            background: rgba(91,70,54,0.15);
+        }
+        #crawlerBrowse[data-reader-theme="sepia"] .font-select,
+        #crawlerBrowse[data-reader-theme="sepia"] .theme-select {
+            background: rgba(91,70,54,0.08);
+            border-color: rgba(91,70,54,0.15);
+            color: #5b4636;
+        }
         /* Light theme also needs reader overlay vars when in default reader theme */
         [data-theme="light"] .reader-overlay {
             --text: #1a1a2e;
@@ -534,7 +568,7 @@
         .crawler-ch-saved { color: var(--green); font-size: 11px; margin-left: 4px; flex-shrink: 0; }
         .crawler-content-area { flex: 1; min-width: 0; }
         .crawler-content {
-            max-width: 760px; margin: 0 auto;
+            max-width: 760px; margin: 0 auto; padding: 16px 20px 80px;
             font-family: var(--font-read); font-size: 18px; line-height: 1.8;
             color: var(--text); word-wrap: break-word;
         }

@@ -140,6 +140,32 @@
         });
     }
 
+    function _blobToText(blob) {
+        if (blob.text) return blob.text();
+        return new Promise(function (resolve, reject) {
+            var fr = new FileReader();
+            fr.onload = function () { resolve(String(fr.result || '')); };
+            fr.onerror = function () { reject(fr.error); };
+            fr.readAsText(blob);
+        });
+    }
+
+    // Fast path for our own ZIPs (STORE/no-compression):
+    // read entry bytes directly from original file to avoid zip.js stream stalls on some Safari builds.
+    function _sliceStoredEntryBlob(file, entry) {
+        if (!entry || entry.compressionMethod !== 0) {
+            return Promise.reject(new Error('Entry is not STORE-compressed'));
+        }
+        var nameLen = entry.rawFilename ? entry.rawFilename.length : (entry.filenameLength || 0);
+        var extraLen = entry.rawExtraField ? entry.rawExtraField.length : (entry.extraFieldLength || 0);
+        var start = (entry.offset || 0) + 30 + nameLen + extraLen;
+        var end = start + (entry.compressedSize || 0);
+        if (end < start || end > file.size) {
+            return Promise.reject(new Error('Invalid ZIP entry bounds'));
+        }
+        return Promise.resolve(file.slice(start, end));
+    }
+
     // ===== Export =====
 
     function exportBackup() {
@@ -277,10 +303,12 @@
 
                 progress('Đọc metadata...');
                 console.log(LOG, 'Reading metadata.json via BlobWriter...');
-                // Use BlobWriter instead of TextWriter — more reliable for large entries
-                return metaEntry.getData(new zipMod.BlobWriter()).then(function (blob) {
+                // Prefer direct slice for STORE entries; fallback to zip.js getData.
+                return _sliceStoredEntryBlob(file, metaEntry).catch(function () {
+                    return metaEntry.getData(new zipMod.BlobWriter());
+                }).then(function (blob) {
                     console.log(LOG, 'metadata.json blob ready, size:', blob.size, '→ reading as text');
-                    return blob.text();
+                    return _blobToText(blob);
                 }).then(function (jsonText) {
                     console.log(LOG, 'metadata.json read, length:', jsonText.length);
                     var backup;
@@ -319,7 +347,9 @@
                             ebookIdx++;
                             progress('Đọc ebook ' + ebookIdx + '/' + ebookBooks.length + '...');
                             console.log(LOG, 'Reading ZIP entry:', book.zipPath);
-                            return entryMap[book.zipPath].getData(new zipMod.BlobWriter()).then(function (blob) {
+                            return _sliceStoredEntryBlob(file, entryMap[book.zipPath]).catch(function () {
+                                return entryMap[book.zipPath].getData(new zipMod.BlobWriter());
+                            }).then(function (blob) {
                                 console.log(LOG, 'Got blob, size:', blob.size, '→ converting to ArrayBuffer');
                                 return _blobToArrayBuffer(blob);
                             }).then(function (ab) {
