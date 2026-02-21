@@ -114,20 +114,20 @@
     // ===== Site Presets =====
     var SITE_PRESETS = [
         {
-            id: '69shu',
-            name: '69书吧 (69shu)',
-            urlPattern: /69shu/,
+            id: 'uukanshu',
+            name: 'UU看書 (uukanshu.cc)',
+            urlPattern: /uukanshu/,
             novel: {
-                title: '.bread-crumbs a:last-child, h1',
-                chapterList: '.mu_contain li a',
+                title: '.booktitle, h1',
+                chapterList: '.chapterlist dd a',
                 reverseChapters: false
             },
             chapter: {
-                content: '.txtnav',
-                title: 'h1, .h1title',
-                remove: ['script', '.txtinfo', '.bottom-ad', 'div[align="center"]', '.ads', '#bottomad'],
-                nextLink: '#next_url, a:contains("下一章"), a[rel="next"]',
-                prevLink: '#prev_url, a:contains("上一章"), a[rel="prev"]'
+                content: '.content',
+                title: 'h1, .booktitle',
+                remove: ['script', '.ads', '.aadd', '.aminus', '.pattern'],
+                nextLink: 'a:contains("下一章"), a:contains("下一頁")',
+                prevLink: 'a:contains("上一章"), a:contains("上一頁")'
             }
         },
         {
@@ -143,25 +143,25 @@
                 content: '#content, .content',
                 title: '.bookname h1, .content h1, h1',
                 remove: ['script', '.bottem', '.google', 'div[align="center"]', 'p:empty'],
-                nextLink: '#next_url, a:contains("下一章"), .bottem1 a:nth-child(3)',
-                prevLink: '#prev_url, a:contains("上一章"), .bottem1 a:nth-child(1)'
+                nextLink: '#next_url, a:contains("下一章")',
+                prevLink: '#prev_url, a:contains("上一章")'
             }
         },
         {
-            id: 'uukanshu',
-            name: 'UU看书',
-            urlPattern: /uukanshu/,
+            id: '69shu',
+            name: '69书吧 (69shuba)',
+            urlPattern: /69shu/,
             novel: {
-                title: '.jieshao_content h1, h1',
-                chapterList: '#chapterList li a',
-                reverseChapters: true
+                title: '.bread-crumbs a:last-child, h1',
+                chapterList: '.mu_contain li a',
+                reverseChapters: false
             },
             chapter: {
-                content: '#contentbox',
-                title: 'h1, #timark',
-                remove: ['script', '.ad_content', '#mall,#pc'],
-                nextLink: 'a#next, a:contains("下一章")',
-                prevLink: 'a#prev, a:contains("上一章")'
+                content: '.txtnav',
+                title: 'h1, .h1title',
+                remove: ['script', '.txtinfo', '.bottom-ad', 'div[align="center"]', '.ads'],
+                nextLink: '#next_url, a:contains("下一章")',
+                prevLink: '#prev_url, a:contains("上一章")'
             }
         }
     ];
