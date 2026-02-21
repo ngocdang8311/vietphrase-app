@@ -584,7 +584,156 @@
             animation: syncSpin 0.8s linear infinite;
         }
 
-        /* Novel cards */
+        /* ===== Crawler: Site Grid + Cards ===== */
+        .crawler-section-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 15px; font-weight: 700; color: var(--text);
+            margin-bottom: 12px;
+        }
+        .crawler-site-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+        .crawler-site-card {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 20px 12px; border-radius: var(--radius);
+            background: var(--surface-card); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.2s var(--ease);
+            position: relative; text-align: center;
+        }
+        .crawler-site-card:hover {
+            border-color: var(--border-focus);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+        .crawler-site-card.disabled {
+            opacity: 0.45; cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+        .crawler-site-card.disabled:hover {
+            transform: none; box-shadow: none;
+            border-color: var(--border);
+        }
+        .crawler-site-card-icon { font-size: 32px; }
+        .crawler-site-card-name {
+            font-size: 14px; font-weight: 700; color: var(--text);
+        }
+        .crawler-site-card-url {
+            font-size: 11px; color: var(--text-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .crawler-site-card-badge {
+            position: absolute; top: 8px; right: 8px;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            color: var(--orange); background: var(--orange-soft);
+            padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+        }
+
+        /* ===== Crawler: Site Home ===== */
+        .crawler-site-home-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 20px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .crawler-site-home-name {
+            font-size: 18px; font-weight: 800;
+        }
+
+        /* Category pills */
+        .crawler-cat-grid {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .crawler-cat-pill {
+            padding: 8px 16px; border-radius: 20px;
+            background: var(--surface-card); border: 1px solid var(--border);
+            color: var(--text-secondary); font-size: 13px; font-weight: 600;
+            font-family: var(--font); cursor: pointer;
+            transition: all 0.2s var(--ease);
+        }
+        .crawler-cat-pill:hover {
+            background: rgba(124,108,240,0.12); color: var(--accent-2);
+            border-color: var(--border-focus);
+        }
+
+        /* Ranking tabs */
+        .crawler-rank-tabs {
+            display: flex; gap: 4px; padding: 4px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; width: fit-content; margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .crawler-rank-tab {
+            padding: 6px 14px; border: none; border-radius: 7px;
+            font-family: var(--font); font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); background: transparent;
+            cursor: pointer; transition: all 0.2s var(--ease);
+        }
+        .crawler-rank-tab:hover { color: var(--text); background: var(--surface-hover); }
+        .crawler-rank-tab.active {
+            background: var(--gradient-btn); color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        /* Novel grid / browse cards */
+        .crawler-novel-grid {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .crawler-browse-card {
+            padding: 14px 18px; border-radius: var(--radius);
+            background: var(--surface-card); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.2s var(--ease);
+        }
+        .crawler-browse-card:hover {
+            border-color: var(--border-focus);
+            background: var(--surface-card-hover);
+        }
+        .crawler-browse-card-title {
+            font-size: 14px; font-weight: 700; color: var(--text);
+            margin-bottom: 2px;
+        }
+        .crawler-browse-card-author {
+            font-size: 12px; color: var(--accent-2); font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .crawler-browse-card-desc {
+            font-size: 12px; color: var(--text-muted); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        /* Pagination */
+        .crawler-pagination {
+            display: flex; align-items: center; justify-content: center;
+            gap: 4px; padding: 16px 0; flex-wrap: wrap;
+        }
+        .crawler-page-btn {
+            min-width: 36px; height: 36px; padding: 0 10px;
+            border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface-card); color: var(--text-secondary);
+            font-family: var(--font); font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s var(--ease);
+        }
+        .crawler-page-btn:hover {
+            background: var(--surface-card-hover); color: var(--text);
+        }
+        .crawler-page-btn.active {
+            background: var(--gradient-btn); color: #fff;
+            border-color: transparent;
+        }
+        .crawler-page-next { padding: 0 14px; }
+
+        /* List header */
+        .crawler-list-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .crawler-list-title {
+            font-size: 16px; font-weight: 700;
+        }
+
+        /* Novel cards (saved) */
         .crawler-novels-header {
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 16px;
@@ -670,6 +819,15 @@
             .crawler-sidebar.hidden { transform: translateX(-100%); }
             .crawler-sidebar-close { display: block; }
             .crawler-edit-body { flex-direction: column; }
+            /* New crawler views mobile */
+            .crawler-site-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .crawler-site-card { padding: 16px 10px; }
+            .crawler-site-card-icon { font-size: 26px; }
+            .crawler-site-card-name { font-size: 13px; }
+            .crawler-cat-pill { padding: 6px 12px; font-size: 12px; }
+            .crawler-rank-tabs { width: 100%; }
+            .crawler-browse-card { padding: 12px 14px; }
+            .crawler-browse-card-title { font-size: 13px; }
         }
     </style>
 </head>

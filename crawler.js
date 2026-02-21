@@ -70,7 +70,6 @@
         });
     }
 
-    // Get all saved chapters for a novel
     function getNovelChapters(novelId) {
         return openDB().then(function (db) {
             return new Promise(function (resolve, reject) {
@@ -91,7 +90,6 @@
         });
     }
 
-    // Delete all chapters of a novel
     function deleteNovelChapters(novelId) {
         return openDB().then(function (db) {
             return new Promise(function (resolve, reject) {
@@ -118,8 +116,49 @@
     var SITE_PRESETS = [
         {
             id: 'uukanshu',
-            name: 'UU看書 (uukanshu.cc)',
+            name: 'UU\u770B\u66F8',
+            icon: '\uD83D\uDCD6',
+            baseUrl: 'https://www.uukanshu.cc',
             urlPattern: /uukanshu/,
+            home: {
+                featured: {
+                    container: '#fengtui .item',
+                    title: 'dl dt a',
+                    author: 'dl dt span',
+                    description: 'dl dd',
+                    link: 'dl dt a'
+                },
+                categories: [
+                    { name: '\u7384\u5E7B\u5947\u5E7B', url: '/class_1_1.html' },
+                    { name: '\u6B66\u4FE0\u4ED9\u4FE0', url: '/class_2_1.html' },
+                    { name: '\u73FE\u4EE3\u90FD\u5E02', url: '/class_3_1.html' },
+                    { name: '\u6B77\u53F2\u8ECD\u4E8B', url: '/class_4_1.html' },
+                    { name: '\u79D1\u5E7B\u5C0F\u8AAA', url: '/class_5_1.html' },
+                    { name: '\u904A\u6232\u7AF6\u6280', url: '/class_6_1.html' },
+                    { name: '\u6050\u6016\u9748\u7570', url: '/class_7_1.html' },
+                    { name: '\u8A00\u60C5\u5C0F\u8AAA', url: '/class_8_1.html' },
+                    { name: '\u52D5\u6F2B\u540C\u4EBA', url: '/class_9_1.html' },
+                    { name: '\u5176\u4ED6\u985E\u578B', url: '/class_10_1.html' }
+                ],
+                rankings: [
+                    { name: 'T\u1ED5ng BXH',    url: '/top/allvisit_1.html' },
+                    { name: 'Th\u00E1ng',       url: '/top/monthvisit_1.html' },
+                    { name: 'Tu\u1EA7n',        url: '/top/weekvisit_1.html' },
+                    { name: 'M\u1EDBi \u0111\u0103ng',    url: '/top/postdate_1.html' },
+                    { name: 'M\u1EDBi update',  url: '/top/lastupdate_1.html' }
+                ],
+                novelList: {
+                    container: '.bookbox',
+                    title: '.bookname a',
+                    author: '.author',
+                    description: '.update',
+                    link: '.bookname a'
+                },
+                pagination: {
+                    next: '.pagelink .next',
+                    pages: '.pagelink a'
+                }
+            },
             novel: {
                 title: '.booktitle, h1',
                 chapterList: '.chapterlist dd a',
@@ -129,14 +168,17 @@
                 content: '.content',
                 title: 'h1, .booktitle',
                 remove: ['script', '.ads', '.aadd', '.aminus', '.pattern'],
-                nextLink: 'a:contains("下一章"), a:contains("下一頁")',
-                prevLink: 'a:contains("上一章"), a:contains("上一頁")'
+                nextLink: 'a:contains("\u4E0B\u4E00\u7AE0"), a:contains("\u4E0B\u4E00\u9801")',
+                prevLink: 'a:contains("\u4E0A\u4E00\u7AE0"), a:contains("\u4E0A\u4E00\u9801")'
             }
         },
         {
             id: 'biquge',
-            name: 'Biquge (biquge.net)',
+            name: 'Biquge',
+            icon: '\uD83D\uDCD5',
+            baseUrl: 'https://www.biquge.net',
             urlPattern: /biquge|biqg|xbiquge|ibiquge|bqg/,
+            home: null,
             novel: {
                 title: '#info h1, .info h1, h1',
                 chapterList: '#list dd a, .listmain dd a, #chapterlist a',
@@ -146,14 +188,17 @@
                 content: '#content, .content',
                 title: '.bookname h1, .content h1, h1',
                 remove: ['script', '.bottem', '.google', 'div[align="center"]', 'p:empty'],
-                nextLink: '#next_url, a:contains("下一章")',
-                prevLink: '#prev_url, a:contains("上一章")'
+                nextLink: '#next_url, a:contains("\u4E0B\u4E00\u7AE0")',
+                prevLink: '#prev_url, a:contains("\u4E0A\u4E00\u7AE0")'
             }
         },
         {
             id: '69shu',
-            name: '69书吧 (69shuba.com)',
+            name: '69\u4E66\u5427',
+            icon: '\uD83D\uDCD7',
+            baseUrl: 'https://www.69shuba.com',
             urlPattern: /69shu/,
+            home: null,
             novel: {
                 title: '.bread-crumbs a:last-child, h1',
                 chapterList: '.mu_contain li a',
@@ -163,8 +208,8 @@
                 content: '.txtnav',
                 title: 'h1, .h1title',
                 remove: ['script', '.txtinfo', '.bottom-ad', 'div[align="center"]', '.ads'],
-                nextLink: '#next_url, a:contains("下一章")',
-                prevLink: '#prev_url, a:contains("上一章")'
+                nextLink: '#next_url, a:contains("\u4E0B\u4E00\u7AE0")',
+                prevLink: '#prev_url, a:contains("\u4E0A\u4E00\u7AE0")'
             }
         }
     ];
@@ -173,7 +218,6 @@
         for (var i = 0; i < SITE_PRESETS.length; i++) {
             if (SITE_PRESETS[i].urlPattern.test(url)) return SITE_PRESETS[i];
         }
-        // Check custom sites
         var customs = loadCustomSites();
         for (var j = 0; j < customs.length; j++) {
             try {
@@ -208,7 +252,6 @@
 
     function parsePage(html, pageUrl, siteConfig) {
         var doc = new DOMParser().parseFromString(html, 'text/html');
-        // Fix base URL for relative links
         var base = doc.createElement('base');
         base.href = pageUrl;
         doc.head.prepend(base);
@@ -224,7 +267,6 @@
         };
 
         if (!siteConfig) {
-            // Generic: try to extract main content
             var body = doc.body;
             result.title = doc.title || '';
             result.content = extractTextContent(body);
@@ -235,18 +277,15 @@
         var contentEl = safeQuery(doc, siteConfig.chapter.content);
         if (contentEl) {
             result.isChapterPage = true;
-            // Title
             var titleEl = safeQuery(doc, siteConfig.chapter.title);
             result.title = titleEl ? titleEl.textContent.trim() : doc.title || '';
-            // Remove unwanted elements
             if (siteConfig.chapter.remove) {
                 siteConfig.chapter.remove.forEach(function (sel) {
-                    var els = contentEl.querySelectorAll(sel);
-                    for (var i = 0; i < els.length; i++) els[i].remove();
+                    var remEls = contentEl.querySelectorAll(sel);
+                    for (var i = 0; i < remEls.length; i++) remEls[i].remove();
                 });
             }
             result.content = extractTextContent(contentEl);
-            // Prev/next links
             result.prevUrl = findNavLink(doc, siteConfig.chapter.prevLink, pageUrl);
             result.nextUrl = findNavLink(doc, siteConfig.chapter.nextLink, pageUrl);
             return result;
@@ -276,7 +315,7 @@
             return result;
         }
 
-        // Fallback: extract all text
+        // Fallback
         result.title = doc.title || '';
         result.content = extractTextContent(doc.body);
         return result;
@@ -296,17 +335,15 @@
 
     function safeQueryAll(doc, selector) {
         if (!selector) return [];
-        // Try full selector first (handles native comma-separated lists)
         try {
             var all = doc.querySelectorAll(selector);
             if (all.length > 0) return all;
         } catch (e) {}
-        // Fallback: try each part individually
         var sels = selector.split(',');
         for (var i = 0; i < sels.length; i++) {
             try {
-                var els = doc.querySelectorAll(sels[i].trim());
-                if (els.length > 0) return els;
+                var els2 = doc.querySelectorAll(sels[i].trim());
+                if (els2.length > 0) return els2;
             } catch (e) {}
         }
         return [];
@@ -314,7 +351,6 @@
 
     function extractTextContent(el) {
         if (!el) return '';
-        // Walk nodes, converting block elements to newlines
         var text = '';
         var blockTags = { P: 1, DIV: 1, BR: 1, H1: 1, H2: 1, H3: 1, H4: 1, LI: 1, TR: 1, BLOCKQUOTE: 1 };
         function walk(node) {
@@ -332,7 +368,6 @@
             if (isBlock && text.length > 0 && text[text.length - 1] !== '\n') text += '\n';
         }
         walk(el);
-        // Clean up multiple blank lines
         return text.replace(/\n{3,}/g, '\n\n').trim();
     }
 
@@ -341,7 +376,6 @@
         var sels = selector.split(',');
         for (var i = 0; i < sels.length; i++) {
             try {
-                // Handle :contains pseudo (not native CSS)
                 var sel = sels[i].trim();
                 var containsMatch = sel.match(/a:contains\("(.+?)"\)/);
                 if (containsMatch) {
@@ -401,40 +435,105 @@
         historyIndex: -1,
         novelProject: null,
         siteConfig: null,
-        loading: false
+        loading: false,
+        // View system
+        viewStack: ['home'],
+        activePreset: null
     };
 
     // ===== UI =====
 
     var rootEl = null;
-    var els = {}; // cached DOM refs
+    var els = {};
+
+    // View IDs mapping
+    var VIEW_IDS = {
+        home: 'crawlerHome',
+        siteHome: 'crawlerSiteHome',
+        list: 'crawlerList',
+        browse: 'crawlerBrowse'
+    };
 
     function init(container) {
         rootEl = container;
         renderShell();
         bindEvents();
-        showNovelsView();
+        showView('home');
+        renderSiteGrid();
+        renderSavedNovels();
     }
 
     function renderShell() {
         rootEl.innerHTML =
             '<div class="crawler-shell">' +
-                // Browse view
+                // ===== Home View =====
+                '<div class="crawler-home" id="crawlerHome">' +
+                    '<div class="crawler-section-title">' +
+                        '<span>Ch\u1ECDn ngu\u1ED3n truy\u1EC7n</span>' +
+                    '</div>' +
+                    '<div class="crawler-site-grid" id="crawlerSiteGrid"></div>' +
+                    '<div class="crawler-section-title" style="margin-top:28px">' +
+                        '<span>Truy\u1EC7n \u0111\u00E3 l\u01B0u</span>' +
+                        '<button class="btn btn-default" id="crawlerBrowseUrl" style="font-size:12px;padding:6px 14px;margin-left:auto">' +
+                            'Duy\u1EC7t URL' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="crawler-novels-list" id="crawlerNovelsList"></div>' +
+                    '<div class="crawler-novels-empty hidden" id="crawlerNovelsEmpty">' +
+                        '<div class="empty-icon">&#x1F310;</div>' +
+                        '<div class="empty-title">Ch\u01B0a c\u00F3 truy\u1EC7n n\u00E0o</div>' +
+                        '<div class="empty-sub">Ch\u1ECDn ngu\u1ED3n truy\u1EC7n \u1EDF tr\u00EAn ho\u1EB7c d\u00F9ng "Duy\u1EC7t URL"</div>' +
+                    '</div>' +
+                '</div>' +
+                // ===== Site Home View =====
+                '<div class="crawler-site-home hidden" id="crawlerSiteHome">' +
+                    '<div class="crawler-site-home-header">' +
+                        '<button class="btn btn-default crawler-back-btn" id="crawlerSiteHomeBack">&larr;</button>' +
+                        '<span class="crawler-site-home-name" id="crawlerSiteHomeName"></span>' +
+                    '</div>' +
+                    '<div class="crawler-section-title">Th\u1EC3 lo\u1EA1i</div>' +
+                    '<div class="crawler-cat-grid" id="crawlerCatGrid"></div>' +
+                    '<div class="crawler-section-title" style="margin-top:24px">B\u1EA3ng x\u1EBFp h\u1EA1ng</div>' +
+                    '<div class="crawler-rank-tabs" id="crawlerRankTabs"></div>' +
+                    '<div class="crawler-novel-grid" id="crawlerRankContent"></div>' +
+                    '<div class="crawler-loading hidden" id="crawlerRankLoading">' +
+                        '<div class="crawler-spinner"></div>' +
+                        '<span>\u0110ang t\u1EA3i...</span>' +
+                    '</div>' +
+                    '<div class="crawler-section-title" style="margin-top:24px">Truy\u1EC7n n\u1ED5i b\u1EADt</div>' +
+                    '<div class="crawler-novel-grid" id="crawlerFeatured"></div>' +
+                    '<div class="crawler-loading hidden" id="crawlerFeaturedLoading">' +
+                        '<div class="crawler-spinner"></div>' +
+                        '<span>\u0110ang t\u1EA3i...</span>' +
+                    '</div>' +
+                '</div>' +
+                // ===== List View =====
+                '<div class="crawler-list hidden" id="crawlerList">' +
+                    '<div class="crawler-list-header">' +
+                        '<button class="btn btn-default crawler-back-btn" id="crawlerListBack">&larr;</button>' +
+                        '<span class="crawler-list-title" id="crawlerListTitle"></span>' +
+                    '</div>' +
+                    '<div class="crawler-novel-grid" id="crawlerListContent"></div>' +
+                    '<div class="crawler-loading hidden" id="crawlerListLoading">' +
+                        '<div class="crawler-spinner"></div>' +
+                        '<span>\u0110ang t\u1EA3i...</span>' +
+                    '</div>' +
+                    '<div class="crawler-pagination" id="crawlerListPagination"></div>' +
+                '</div>' +
+                // ===== Browse View =====
                 '<div class="crawler-browse hidden" id="crawlerBrowse">' +
-                    // Top bar
                     '<div class="crawler-topbar">' +
-                        '<button class="btn btn-default crawler-back-btn" id="crawlerBackBtn" title="Quay lại">&larr;</button>' +
-                        '<input type="text" class="crawler-url-input" id="crawlerUrlInput" placeholder="Nhập URL truyện...">' +
-                        '<button class="btn btn-accent crawler-go-btn" id="crawlerGoBtn">Đi</button>' +
+                        '<button class="btn btn-default crawler-back-btn" id="crawlerBackBtn" title="Quay l\u1EA1i">&larr;</button>' +
+                        '<input type="text" class="crawler-url-input" id="crawlerUrlInput" placeholder="Nh\u1EADp URL truy\u1EC7n...">' +
+                        '<button class="btn btn-accent crawler-go-btn" id="crawlerGoBtn">\u0110i</button>' +
                         '<select class="crawler-site-select" id="crawlerSiteSelect">' +
-                            '<option value="auto">Tự nhận diện</option>' +
+                            '<option value="auto">T\u1EF1 nh\u1EADn di\u1EC7n</option>' +
                         '</select>' +
                     '</div>' +
-                    // Main area: sidebar + content
                     '<div class="crawler-main">' +
                         '<div class="crawler-sidebar hidden" id="crawlerSidebar">' +
                             '<div class="crawler-sidebar-header">' +
-                                '<span id="crawlerSidebarTitle">Danh sách chương</span>' +
+                                '<span id="crawlerSidebarTitle">Danh s\u00E1ch ch\u01B0\u01A1ng</span>' +
                                 '<button class="btn btn-default crawler-sidebar-close" id="crawlerSidebarClose">&times;</button>' +
                             '</div>' +
                             '<div class="crawler-chapter-list" id="crawlerChapterList"></div>' +
@@ -442,61 +541,69 @@
                         '<div class="crawler-content-area">' +
                             '<div class="crawler-loading hidden" id="crawlerLoading">' +
                                 '<div class="crawler-spinner"></div>' +
-                                '<span>Đang tải...</span>' +
+                                '<span>\u0110ang t\u1EA3i...</span>' +
                             '</div>' +
                             '<div class="crawler-content" id="crawlerContent"></div>' +
                         '</div>' +
                     '</div>' +
-                    // Bottom bar
                     '<div class="crawler-bottombar" id="crawlerBottombar">' +
-                        '<button class="btn btn-default" id="crawlerPrevBtn">&larr; Trước</button>' +
-                        '<button class="btn btn-green" id="crawlerSaveBtn">Lưu chương</button>' +
-                        '<button class="btn btn-default" id="crawlerToggleSidebar">Mục lục</button>' +
-                        '<button class="btn btn-default" id="crawlerNextBtn">Tiếp &rarr;</button>' +
+                        '<button class="btn btn-default" id="crawlerPrevBtn">&larr; Tr\u01B0\u1EDBc</button>' +
+                        '<button class="btn btn-green" id="crawlerSaveBtn">L\u01B0u ch\u01B0\u01A1ng</button>' +
+                        '<button class="btn btn-default" id="crawlerToggleSidebar">M\u1EE5c l\u1EE5c</button>' +
+                        '<button class="btn btn-default" id="crawlerNextBtn">Ti\u1EBFp &rarr;</button>' +
                     '</div>' +
                 '</div>' +
-                // Novels list view
-                '<div class="crawler-novels" id="crawlerNovels">' +
-                    '<div class="crawler-novels-header">' +
-                        '<div class="crawler-novels-title">Truyện đã lưu</div>' +
-                        '<button class="btn btn-accent" id="crawlerNewBrowse">+ Duyệt mới</button>' +
-                    '</div>' +
-                    '<div class="crawler-novels-list" id="crawlerNovelsList"></div>' +
-                    '<div class="crawler-novels-empty hidden" id="crawlerNovelsEmpty">' +
-                        '<div class="empty-icon">&#x1F310;</div>' +
-                        '<div class="empty-title">Chưa có truyện nào</div>' +
-                        '<div class="empty-sub">Nhấn "Duyệt mới" để bắt đầu</div>' +
-                    '</div>' +
-                '</div>' +
-                // Edit modal
+                // ===== Edit Modal =====
                 '<div class="crawler-edit-modal hidden" id="crawlerEditModal">' +
                     '<div class="crawler-edit-overlay"></div>' +
                     '<div class="crawler-edit-box">' +
                         '<div class="crawler-edit-header">' +
-                            '<span>Chỉnh sửa bản dịch</span>' +
+                            '<span>Ch\u1EC9nh s\u1EEDa b\u1EA3n d\u1ECBch</span>' +
                             '<button class="btn btn-default" id="crawlerEditClose">&times;</button>' +
                         '</div>' +
                         '<div class="crawler-edit-body">' +
                             '<div class="crawler-edit-col">' +
-                                '<label>Nguyên văn (中文)</label>' +
+                                '<label>Nguy\u00EAn v\u0103n (\u4E2D\u6587)</label>' +
                                 '<textarea readonly id="crawlerEditZh"></textarea>' +
                             '</div>' +
                             '<div class="crawler-edit-col">' +
-                                '<label>Bản dịch (Tiếng Việt)</label>' +
+                                '<label>B\u1EA3n d\u1ECBch (Ti\u1EBFng Vi\u1EC7t)</label>' +
                                 '<textarea id="crawlerEditVi"></textarea>' +
                             '</div>' +
                         '</div>' +
                         '<div class="crawler-edit-footer">' +
-                            '<button class="btn btn-accent" id="crawlerEditSave">Lưu</button>' +
-                            '<button class="btn btn-default" id="crawlerEditCancel">Hủy</button>' +
+                            '<button class="btn btn-accent" id="crawlerEditSave">L\u01B0u</button>' +
+                            '<button class="btn btn-default" id="crawlerEditCancel">H\u1EE7y</button>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
             '</div>';
 
-        // Cache refs
+        // Cache DOM refs — Home
+        els.home = rootEl.querySelector('#crawlerHome');
+        els.siteGrid = rootEl.querySelector('#crawlerSiteGrid');
+        els.novelsList = rootEl.querySelector('#crawlerNovelsList');
+        els.novelsEmpty = rootEl.querySelector('#crawlerNovelsEmpty');
+        els.browseUrlBtn = rootEl.querySelector('#crawlerBrowseUrl');
+        // Cache DOM refs — Site Home
+        els.siteHome = rootEl.querySelector('#crawlerSiteHome');
+        els.siteHomeName = rootEl.querySelector('#crawlerSiteHomeName');
+        els.siteHomeBack = rootEl.querySelector('#crawlerSiteHomeBack');
+        els.catGrid = rootEl.querySelector('#crawlerCatGrid');
+        els.rankTabs = rootEl.querySelector('#crawlerRankTabs');
+        els.rankContent = rootEl.querySelector('#crawlerRankContent');
+        els.rankLoading = rootEl.querySelector('#crawlerRankLoading');
+        els.featured = rootEl.querySelector('#crawlerFeatured');
+        els.featuredLoading = rootEl.querySelector('#crawlerFeaturedLoading');
+        // Cache DOM refs — List
+        els.list = rootEl.querySelector('#crawlerList');
+        els.listTitle = rootEl.querySelector('#crawlerListTitle');
+        els.listBack = rootEl.querySelector('#crawlerListBack');
+        els.listContent = rootEl.querySelector('#crawlerListContent');
+        els.listLoading = rootEl.querySelector('#crawlerListLoading');
+        els.listPagination = rootEl.querySelector('#crawlerListPagination');
+        // Cache DOM refs — Browse
         els.browse = rootEl.querySelector('#crawlerBrowse');
-        els.novels = rootEl.querySelector('#crawlerNovels');
         els.urlInput = rootEl.querySelector('#crawlerUrlInput');
         els.goBtn = rootEl.querySelector('#crawlerGoBtn');
         els.backBtn = rootEl.querySelector('#crawlerBackBtn');
@@ -512,9 +619,7 @@
         els.saveBtn = rootEl.querySelector('#crawlerSaveBtn');
         els.toggleSidebar = rootEl.querySelector('#crawlerToggleSidebar');
         els.bottombar = rootEl.querySelector('#crawlerBottombar');
-        els.novelsList = rootEl.querySelector('#crawlerNovelsList');
-        els.novelsEmpty = rootEl.querySelector('#crawlerNovelsEmpty');
-        els.newBrowse = rootEl.querySelector('#crawlerNewBrowse');
+        // Cache DOM refs — Edit modal
         els.editModal = rootEl.querySelector('#crawlerEditModal');
         els.editZh = rootEl.querySelector('#crawlerEditZh');
         els.editVi = rootEl.querySelector('#crawlerEditVi');
@@ -522,7 +627,7 @@
         els.editClose = rootEl.querySelector('#crawlerEditClose');
         els.editCancel = rootEl.querySelector('#crawlerEditCancel');
 
-        // Populate site selector
+        // Populate site selector in browse view
         for (var i = 0; i < SITE_PRESETS.length; i++) {
             var opt = document.createElement('option');
             opt.value = SITE_PRESETS[i].id;
@@ -530,7 +635,6 @@
             els.siteSelect.appendChild(opt);
         }
 
-        // Apply reader font settings
         applyReaderSettings();
     }
 
@@ -548,7 +652,101 @@
     }
 
     function bindEvents() {
-        // Go button / enter key
+        // ===== Home View Events =====
+        els.browseUrlBtn.addEventListener('click', function () {
+            pushView('browse');
+            state.novelProject = null;
+            state.history = [];
+            state.historyIndex = -1;
+            els.urlInput.value = '';
+            els.content.innerHTML = '';
+            els.chapterList.innerHTML = '';
+            els.sidebar.classList.add('hidden');
+            els.urlInput.focus();
+        });
+
+        // Site grid clicks
+        els.siteGrid.addEventListener('click', function (e) {
+            var card = e.target.closest('.crawler-site-card');
+            if (!card || card.classList.contains('disabled')) return;
+            var presetId = card.dataset.presetId;
+            for (var i = 0; i < SITE_PRESETS.length; i++) {
+                if (SITE_PRESETS[i].id === presetId) {
+                    openSiteHome(SITE_PRESETS[i]);
+                    break;
+                }
+            }
+        });
+
+        // Saved novels list click delegation
+        els.novelsList.addEventListener('click', function (e) {
+            var openBtn = e.target.closest('.crawler-novel-open');
+            if (openBtn) {
+                pushView('browse');
+                openNovel(openBtn.dataset.id);
+                return;
+            }
+            var exportBtn = e.target.closest('.crawler-novel-export');
+            if (exportBtn) { exportToLibrary(exportBtn.dataset.id); return; }
+            var deleteBtn = e.target.closest('.crawler-novel-delete');
+            if (deleteBtn) {
+                if (confirm('X\u00F3a truy\u1EC7n n\u00E0y v\u00E0 t\u1EA5t c\u1EA3 ch\u01B0\u01A1ng \u0111\u00E3 l\u01B0u?')) {
+                    deleteNovel(deleteBtn.dataset.id);
+                }
+                return;
+            }
+        });
+
+        // ===== Site Home Events =====
+        els.siteHomeBack.addEventListener('click', function () { popView(); });
+
+        // Category pills
+        els.catGrid.addEventListener('click', function (e) {
+            var pill = e.target.closest('.crawler-cat-pill');
+            if (!pill) return;
+            var url = pill.dataset.url;
+            var name = pill.textContent;
+            if (url) openNovelList(url, name);
+        });
+
+        // Ranking tabs
+        els.rankTabs.addEventListener('click', function (e) {
+            var tab = e.target.closest('.crawler-rank-tab');
+            if (!tab) return;
+            var tabs = els.rankTabs.querySelectorAll('.crawler-rank-tab');
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            tab.classList.add('active');
+            loadRankingNovels(tab.dataset.url);
+        });
+
+        // Novel card clicks in site home (ranking + featured)
+        els.rankContent.addEventListener('click', function (e) {
+            var card = e.target.closest('.crawler-browse-card');
+            if (card && card.dataset.url) openNovelFromCard(card.dataset.url);
+        });
+        els.featured.addEventListener('click', function (e) {
+            var card = e.target.closest('.crawler-browse-card');
+            if (card && card.dataset.url) openNovelFromCard(card.dataset.url);
+        });
+
+        // ===== List View Events =====
+        els.listBack.addEventListener('click', function () { popView(); });
+
+        // Novel card clicks in list
+        els.listContent.addEventListener('click', function (e) {
+            var card = e.target.closest('.crawler-browse-card');
+            if (card && card.dataset.url) openNovelFromCard(card.dataset.url);
+        });
+
+        // Pagination clicks
+        els.listPagination.addEventListener('click', function (e) {
+            var btn = e.target.closest('.crawler-page-btn');
+            if (!btn) return;
+            var url = btn.dataset.url;
+            if (url) loadNovelList(url);
+        });
+
+        // ===== Browse View Events =====
         els.goBtn.addEventListener('click', function () {
             var url = els.urlInput.value.trim();
             if (url) navigateTo(url);
@@ -560,10 +758,8 @@
             }
         });
 
-        // Back button
         els.backBtn.addEventListener('click', goBack);
 
-        // Site select
         els.siteSelect.addEventListener('change', function () {
             var val = els.siteSelect.value;
             if (val === 'auto') {
@@ -575,7 +771,6 @@
             }
         });
 
-        // Sidebar toggle
         els.toggleSidebar.addEventListener('click', function () {
             els.sidebar.classList.toggle('hidden');
         });
@@ -583,7 +778,6 @@
             els.sidebar.classList.add('hidden');
         });
 
-        // Chapter list click
         els.chapterList.addEventListener('click', function (e) {
             var item = e.target.closest('.crawler-ch-item');
             if (!item) return;
@@ -591,7 +785,6 @@
             if (url) navigateTo(url);
         });
 
-        // Prev/next
         els.prevBtn.addEventListener('click', function () {
             if (state.parsedPage && state.parsedPage.prevUrl) navigateTo(state.parsedPage.prevUrl);
         });
@@ -599,36 +792,7 @@
             if (state.parsedPage && state.parsedPage.nextUrl) navigateTo(state.parsedPage.nextUrl);
         });
 
-        // Save chapter
         els.saveBtn.addEventListener('click', saveCurrentChapter);
-
-        // New browse
-        els.newBrowse.addEventListener('click', function () {
-            state.novelProject = null;
-            state.history = [];
-            state.historyIndex = -1;
-            els.urlInput.value = '';
-            els.content.innerHTML = '';
-            els.chapterList.innerHTML = '';
-            els.sidebar.classList.add('hidden');
-            showBrowseView();
-            els.urlInput.focus();
-        });
-
-        // Novels list click delegation
-        els.novelsList.addEventListener('click', function (e) {
-            var openBtn = e.target.closest('.crawler-novel-open');
-            if (openBtn) { openNovel(openBtn.dataset.id); return; }
-            var exportBtn = e.target.closest('.crawler-novel-export');
-            if (exportBtn) { exportToLibrary(exportBtn.dataset.id); return; }
-            var deleteBtn = e.target.closest('.crawler-novel-delete');
-            if (deleteBtn) {
-                if (confirm('Xóa truyện này và tất cả chương đã lưu?')) {
-                    deleteNovel(deleteBtn.dataset.id);
-                }
-                return;
-            }
-        });
 
         // Edit modal
         els.editClose.addEventListener('click', function () { els.editModal.classList.add('hidden'); });
@@ -642,24 +806,365 @@
         });
     }
 
-    // ===== View Switching =====
+    // ===== View System =====
 
-    function showBrowseView() {
-        els.browse.classList.remove('hidden');
-        els.novels.classList.add('hidden');
+    function showView(name) {
+        var keys = Object.keys(VIEW_IDS);
+        for (var i = 0; i < keys.length; i++) {
+            var viewEl = rootEl.querySelector('#' + VIEW_IDS[keys[i]]);
+            if (viewEl) viewEl.classList.toggle('hidden', keys[i] !== name);
+        }
     }
 
-    function showNovelsView() {
-        els.browse.classList.add('hidden');
-        els.novels.classList.remove('hidden');
-        renderNovelsList();
+    function pushView(name) {
+        state.viewStack.push(name);
+        showView(name);
+    }
+
+    function popView() {
+        if (state.viewStack.length > 1) {
+            state.viewStack.pop();
+            var prev = state.viewStack[state.viewStack.length - 1];
+            showView(prev);
+            if (prev === 'home') {
+                renderSavedNovels();
+            }
+        }
+    }
+
+    // ===== Home View: Site Grid + Saved Novels =====
+
+    function renderSiteGrid() {
+        var html = '';
+        for (var i = 0; i < SITE_PRESETS.length; i++) {
+            var p = SITE_PRESETS[i];
+            var disabled = !p.home ? ' disabled' : '';
+            html += '<div class="crawler-site-card' + disabled + '" data-preset-id="' + p.id + '">' +
+                '<div class="crawler-site-card-icon">' + (p.icon || '\uD83D\uDCDA') + '</div>' +
+                '<div class="crawler-site-card-name">' + VP.escapeHtml(p.name) + '</div>' +
+                '<div class="crawler-site-card-url">' + VP.escapeHtml(p.baseUrl ? p.baseUrl.replace(/^https?:\/\//, '') : '') + '</div>' +
+                (disabled ? '<div class="crawler-site-card-badge">B\u1ECB ch\u1EB7n</div>' : '') +
+            '</div>';
+        }
+        els.siteGrid.innerHTML = html;
+    }
+
+    function renderSavedNovels() {
+        dbGetAll('novels').then(function (novels) {
+            if (!novels.length) {
+                els.novelsList.innerHTML = '';
+                els.novelsEmpty.classList.remove('hidden');
+                return;
+            }
+            els.novelsEmpty.classList.add('hidden');
+            novels.sort(function (a, b) { return (b.dateAdded || 0) - (a.dateAdded || 0); });
+
+            var html = '';
+            for (var i = 0; i < novels.length; i++) {
+                var n = novels[i];
+                var totalCh = n.chapters ? n.chapters.length : 0;
+                html += '<div class="crawler-novel-card">' +
+                    '<div class="crawler-novel-info">' +
+                        '<div class="crawler-novel-name">' + VP.escapeHtml(n.title) + '</div>' +
+                        '<div class="crawler-novel-meta">' + n.savedCount + '/' + totalCh + ' ch\u01B0\u01A1ng \u0111\u00E3 l\u01B0u</div>' +
+                    '</div>' +
+                    '<div class="crawler-novel-actions">' +
+                        '<button class="btn btn-accent crawler-novel-open" data-id="' + n.id + '">M\u1EDF</button>' +
+                        '<button class="btn btn-default crawler-novel-export" data-id="' + n.id + '">Xu\u1EA5t</button>' +
+                        '<button class="btn btn-red crawler-novel-delete" data-id="' + n.id + '">X\u00F3a</button>' +
+                    '</div>' +
+                '</div>';
+            }
+            els.novelsList.innerHTML = html;
+        });
+    }
+
+    // ===== Site Home =====
+
+    function openSiteHome(preset) {
+        state.activePreset = preset;
+        state.siteConfig = preset;
+        pushView('siteHome');
+        els.siteHomeName.textContent = preset.icon + ' ' + preset.name;
+
+        // Render categories
+        renderCategoryGrid(preset.home.categories);
+
+        // Render ranking tabs and load first
+        renderRankingTabs(preset.home.rankings);
+
+        // Load featured novels
+        loadFeaturedNovels();
+    }
+
+    function renderCategoryGrid(categories) {
+        var html = '';
+        for (var i = 0; i < categories.length; i++) {
+            var c = categories[i];
+            var fullUrl = state.activePreset.baseUrl + c.url;
+            html += '<button class="crawler-cat-pill" data-url="' + VP.escapeHtml(fullUrl) + '" data-zh="' +
+                VP.escapeHtml(c.name) + '">' + VP.escapeHtml(c.name) + '</button>';
+        }
+        els.catGrid.innerHTML = html;
+
+        // Translate category names asynchronously
+        ensureDict().then(function () {
+            var pills = els.catGrid.querySelectorAll('.crawler-cat-pill[data-zh]');
+            for (var i = 0; i < pills.length; i++) {
+                pills[i].textContent = DictEngine.translate(pills[i].dataset.zh);
+            }
+        }).catch(function () {});
+    }
+
+    function renderRankingTabs(rankings) {
+        var html = '';
+        for (var i = 0; i < rankings.length; i++) {
+            var r = rankings[i];
+            var active = i === 0 ? ' active' : '';
+            var fullUrl = state.activePreset.baseUrl + r.url;
+            html += '<button class="crawler-rank-tab' + active + '" data-url="' +
+                VP.escapeHtml(fullUrl) + '">' + VP.escapeHtml(r.name) + '</button>';
+        }
+        els.rankTabs.innerHTML = html;
+
+        // Load first ranking
+        if (rankings.length > 0) {
+            loadRankingNovels(state.activePreset.baseUrl + rankings[0].url);
+        }
+    }
+
+    function loadRankingNovels(url) {
+        els.rankContent.innerHTML = '';
+        els.rankLoading.classList.remove('hidden');
+
+        fetchPage(url).then(function (html) {
+            var result = parseNovelListPage(html, url, state.activePreset);
+            renderNovelCards(els.rankContent, result.novels);
+            translateNovelMeta(els.rankContent);
+            els.rankLoading.classList.add('hidden');
+        }).catch(function (err) {
+            els.rankContent.innerHTML = '<p style="color:#ff6b6b">L\u1ED7i: ' + VP.escapeHtml(err.message) + '</p>';
+            els.rankLoading.classList.add('hidden');
+        });
+    }
+
+    function loadFeaturedNovels() {
+        els.featured.innerHTML = '';
+        els.featuredLoading.classList.remove('hidden');
+
+        fetchPage(state.activePreset.baseUrl).then(function (html) {
+            var novels = parseFeaturedNovels(html, state.activePreset.baseUrl, state.activePreset);
+            if (novels.length > 0) {
+                renderNovelCards(els.featured, novels);
+                translateNovelMeta(els.featured);
+            } else {
+                els.featured.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Kh\u00F4ng t\u00ECm th\u1EA5y truy\u1EC7n n\u1ED5i b\u1EADt</p>';
+            }
+            els.featuredLoading.classList.add('hidden');
+        }).catch(function (err) {
+            els.featured.innerHTML = '<p style="color:#ff6b6b">L\u1ED7i: ' + VP.escapeHtml(err.message) + '</p>';
+            els.featuredLoading.classList.add('hidden');
+        });
+    }
+
+    // ===== Novel List View =====
+
+    function openNovelList(url, title) {
+        pushView('list');
+        els.listTitle.textContent = title || 'Danh s\u00E1ch';
+        els.listContent.innerHTML = '';
+        els.listPagination.innerHTML = '';
+        loadNovelList(url);
+    }
+
+    function loadNovelList(url) {
+        els.listContent.innerHTML = '';
+        els.listPagination.innerHTML = '';
+        els.listLoading.classList.remove('hidden');
+
+        fetchPage(url).then(function (html) {
+            var result = parseNovelListPage(html, url, state.activePreset);
+            renderNovelCards(els.listContent, result.novels);
+            renderPagination(result.pagination);
+            translateNovelMeta(els.listContent);
+            els.listLoading.classList.add('hidden');
+        }).catch(function (err) {
+            els.listContent.innerHTML = '<p style="color:#ff6b6b">L\u1ED7i: ' + VP.escapeHtml(err.message) + '</p>';
+            els.listLoading.classList.add('hidden');
+        });
+    }
+
+    // ===== Novel List Parsing =====
+
+    function parseNovelListPage(html, baseUrl, preset) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var base = doc.createElement('base');
+        base.href = baseUrl;
+        doc.head.prepend(base);
+
+        var novels = [];
+        var containers = doc.querySelectorAll(preset.home.novelList.container);
+        for (var i = 0; i < containers.length; i++) {
+            var el = containers[i];
+            var titleEl = el.querySelector(preset.home.novelList.title);
+            var authorEl = el.querySelector(preset.home.novelList.author);
+            var descEl = el.querySelector(preset.home.novelList.description);
+            var linkEl = el.querySelector(preset.home.novelList.link);
+
+            if (!titleEl || !linkEl) continue;
+            var href = linkEl.getAttribute('href');
+            if (!href) continue;
+
+            try {
+                novels.push({
+                    title: titleEl.textContent.trim(),
+                    author: authorEl ? authorEl.textContent.trim() : '',
+                    description: descEl ? descEl.textContent.trim() : '',
+                    url: new URL(href, baseUrl).href
+                });
+            } catch (e) {}
+        }
+
+        // Parse pagination
+        var pagination = { pages: [], nextUrl: null };
+        if (preset.home.pagination) {
+            var nextEl = safeQuery(doc, preset.home.pagination.next);
+            if (nextEl) {
+                var nextHref = nextEl.getAttribute('href');
+                if (nextHref) {
+                    try { pagination.nextUrl = new URL(nextHref, baseUrl).href; } catch (e) {}
+                }
+            }
+            var pageEls = safeQueryAll(doc, preset.home.pagination.pages);
+            for (var j = 0; j < pageEls.length; j++) {
+                var pe = pageEls[j];
+                var pageHref = pe.getAttribute('href');
+                var pageText = pe.textContent.trim();
+                var pageNum = parseInt(pageText);
+                if (pageHref && !isNaN(pageNum)) {
+                    try {
+                        pagination.pages.push({
+                            num: pageNum,
+                            url: new URL(pageHref, baseUrl).href,
+                            active: pe.classList.contains('current') || (pe.parentElement && pe.parentElement.classList.contains('current'))
+                        });
+                    } catch (e) {}
+                }
+            }
+        }
+
+        return { novels: novels, pagination: pagination };
+    }
+
+    function parseFeaturedNovels(html, baseUrl, preset) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var base = doc.createElement('base');
+        base.href = baseUrl;
+        doc.head.prepend(base);
+
+        var novels = [];
+        var containers = doc.querySelectorAll(preset.home.featured.container);
+        for (var i = 0; i < containers.length; i++) {
+            var el = containers[i];
+            var titleEl = el.querySelector(preset.home.featured.title);
+            var authorEl = el.querySelector(preset.home.featured.author);
+            var descEl = el.querySelector(preset.home.featured.description);
+            var linkEl = el.querySelector(preset.home.featured.link);
+
+            if (!titleEl || !linkEl) continue;
+            var href = linkEl.getAttribute('href');
+            if (!href) continue;
+
+            try {
+                novels.push({
+                    title: titleEl.textContent.trim(),
+                    author: authorEl ? authorEl.textContent.trim() : '',
+                    description: descEl ? descEl.textContent.trim() : '',
+                    url: new URL(href, baseUrl).href
+                });
+            } catch (e) {}
+        }
+
+        return novels;
+    }
+
+    // ===== Novel Card Rendering =====
+
+    function renderNovelCards(container, novels) {
+        var html = '';
+        for (var i = 0; i < novels.length; i++) {
+            var n = novels[i];
+            html += '<div class="crawler-browse-card" data-url="' + VP.escapeHtml(n.url) + '">' +
+                '<div class="crawler-browse-card-title" data-zh="' + VP.escapeHtml(n.title) + '">' +
+                    VP.escapeHtml(n.title) +
+                '</div>' +
+                (n.author ? '<div class="crawler-browse-card-author">' + VP.escapeHtml(n.author) + '</div>' : '') +
+                (n.description ? '<div class="crawler-browse-card-desc" data-zh="' + VP.escapeHtml(n.description) + '">' +
+                    VP.escapeHtml(n.description) + '</div>' : '') +
+            '</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    function renderPagination(pagination) {
+        if (!pagination || (!pagination.pages.length && !pagination.nextUrl)) {
+            els.listPagination.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < pagination.pages.length; i++) {
+            var p = pagination.pages[i];
+            var active = p.active ? ' active' : '';
+            html += '<button class="crawler-page-btn' + active + '" data-url="' +
+                VP.escapeHtml(p.url) + '">' + p.num + '</button>';
+        }
+        if (pagination.nextUrl) {
+            html += '<button class="crawler-page-btn crawler-page-next" data-url="' +
+                VP.escapeHtml(pagination.nextUrl) + '">Ti\u1EBFp &rarr;</button>';
+        }
+        els.listPagination.innerHTML = html;
+    }
+
+    // ===== Translate Novel Meta =====
+
+    function translateNovelMeta(containerEl) {
+        ensureDict().then(function () {
+            var titles = containerEl.querySelectorAll('.crawler-browse-card-title[data-zh]');
+            for (var i = 0; i < titles.length; i++) {
+                var zh = titles[i].dataset.zh;
+                if (zh) titles[i].textContent = DictEngine.translate(zh);
+            }
+            var descs = containerEl.querySelectorAll('.crawler-browse-card-desc[data-zh]');
+            for (var j = 0; j < descs.length; j++) {
+                var zh2 = descs[j].dataset.zh;
+                if (zh2) descs[j].textContent = DictEngine.translate(zh2);
+            }
+        }).catch(function () {});
+    }
+
+    // ===== Open Novel from Browse Card =====
+
+    function openNovelFromCard(url) {
+        if (state.activePreset) {
+            state.siteConfig = state.activePreset;
+            els.siteSelect.value = state.activePreset.id;
+        }
+        pushView('browse');
+        state.history = [];
+        state.historyIndex = -1;
+        state.novelProject = null;
+        els.urlInput.value = '';
+        els.content.innerHTML = '';
+        els.chapterList.innerHTML = '';
+        els.sidebar.classList.add('hidden');
+        navigateTo(url);
     }
 
     // ===== Navigation =====
 
     function navigateTo(url) {
         if (state.loading) return;
-        // Ensure URL has protocol
         if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
         els.urlInput.value = url;
 
@@ -672,9 +1177,8 @@
             }
         }
 
-        // Push to history
+        // Push to browse history
         if (state.currentUrl && state.currentUrl !== url) {
-            // Trim forward history
             state.history = state.history.slice(0, state.historyIndex + 1);
             state.history.push(state.currentUrl);
             state.historyIndex = state.history.length - 1;
@@ -682,7 +1186,7 @@
 
         state.currentUrl = url;
         state.loading = true;
-        showBrowseView();
+        showView('browse');
         setLoading(true);
         els.content.innerHTML = '';
 
@@ -707,12 +1211,11 @@
                 });
             }
 
-            // Fallback: show raw text
-            els.content.innerHTML = '<p style="color:var(--text-muted)">Không nhận diện được nội dung. Thử chọn đúng site preset.</p>';
+            els.content.innerHTML = '<p style="color:var(--text-muted)">Kh\u00F4ng nh\u1EADn di\u1EC7n \u0111\u01B0\u1EE3c n\u1ED9i dung. Th\u1EED ch\u1ECDn \u0111\u00FAng site preset.</p>';
             state.loading = false;
             setLoading(false);
         }).catch(function (err) {
-            els.content.innerHTML = '<p style="color:#ff6b6b">Lỗi: ' + VP.escapeHtml(err.message) + '</p>';
+            els.content.innerHTML = '<p style="color:#ff6b6b">L\u1ED7i: ' + VP.escapeHtml(err.message) + '</p>';
             state.loading = false;
             setLoading(false);
         });
@@ -726,7 +1229,7 @@
             els.urlInput.value = url;
             navigateWithoutHistory(url);
         } else {
-            showNovelsView();
+            popView();
         }
     }
 
@@ -756,11 +1259,11 @@
                 });
             }
 
-            els.content.innerHTML = '<p style="color:var(--text-muted)">Không nhận diện được nội dung.</p>';
+            els.content.innerHTML = '<p style="color:var(--text-muted)">Kh\u00F4ng nh\u1EADn di\u1EC7n \u0111\u01B0\u1EE3c n\u1ED9i dung.</p>';
             state.loading = false;
             setLoading(false);
         }).catch(function (err) {
-            els.content.innerHTML = '<p style="color:#ff6b6b">Lỗi: ' + VP.escapeHtml(err.message) + '</p>';
+            els.content.innerHTML = '<p style="color:#ff6b6b">L\u1ED7i: ' + VP.escapeHtml(err.message) + '</p>';
             state.loading = false;
             setLoading(false);
         });
@@ -776,12 +1279,11 @@
         }
     }
 
-    // ===== Rendering =====
+    // ===== Browse View Rendering =====
 
     function renderIndexPage(parsed) {
-        // Show chapter links as the main content + populate sidebar
         var html = '<div class="crawler-index-title">' + VP.escapeHtml(parsed.title) + '</div>';
-        html += '<div class="crawler-index-info">' + parsed.chapterLinks.length + ' chương</div>';
+        html += '<div class="crawler-index-info">' + parsed.chapterLinks.length + ' ch\u01B0\u01A1ng</div>';
         html += '<div class="crawler-index-list">';
         for (var i = 0; i < parsed.chapterLinks.length; i++) {
             html += '<a class="crawler-index-link" href="javascript:void(0)" data-url="' +
@@ -790,16 +1292,14 @@
         }
         html += '</div>';
 
-        // Save to novel project button
         if (!state.novelProject) {
             html += '<div style="margin-top:16px;text-align:center">' +
-                '<button class="btn btn-accent" id="crawlerSaveNovel">Lưu truyện này</button></div>';
+                '<button class="btn btn-accent" id="crawlerSaveNovel">L\u01B0u truy\u1EC7n n\u00E0y</button></div>';
         }
 
         els.content.innerHTML = html;
         updateNavButtons();
 
-        // Bind index link clicks
         var links = els.content.querySelectorAll('.crawler-index-link');
         for (var j = 0; j < links.length; j++) {
             links[j].addEventListener('click', function (e) {
@@ -808,7 +1308,6 @@
             });
         }
 
-        // Save novel button
         var saveBtn = els.content.querySelector('#crawlerSaveNovel');
         if (saveBtn) {
             saveBtn.addEventListener('click', function () {
@@ -816,7 +1315,6 @@
             });
         }
 
-        // Populate sidebar
         populateSidebar(parsed.chapterLinks);
     }
 
@@ -839,16 +1337,14 @@
             }
         }
 
-        // Edit button at end
         html += '<div style="text-align:center;margin-top:24px">' +
-            '<button class="btn btn-default" id="crawlerEditBtn">Chỉnh sửa bản dịch</button></div>';
+            '<button class="btn btn-default" id="crawlerEditBtn">Ch\u1EC9nh s\u1EEDa b\u1EA3n d\u1ECBch</button></div>';
 
         els.content.innerHTML = html;
         els.content.scrollTop = 0;
         updateNavButtons();
         updateSidebarActive();
 
-        // Edit button
         var editBtn = els.content.querySelector('#crawlerEditBtn');
         if (editBtn) {
             editBtn.addEventListener('click', function () {
@@ -874,7 +1370,7 @@
         var html = '';
         for (var j = 0; j < chapterLinks.length; j++) {
             var ch = chapterLinks[j];
-            var saved = savedSet[ch.url] ? ' ✓' : '';
+            var saved = savedSet[ch.url] ? ' \u2713' : '';
             var activeClass = (state.currentUrl === ch.url) ? ' active' : '';
             html += '<div class="crawler-ch-item' + activeClass + '" data-url="' +
                 VP.escapeHtml(ch.url) + '" data-index="' + j + '">' +
@@ -882,7 +1378,6 @@
         }
         els.chapterList.innerHTML = html;
 
-        // Show sidebar on desktop
         if (window.innerWidth > 700) {
             els.sidebar.classList.remove('hidden');
         }
@@ -893,7 +1388,6 @@
         for (var i = 0; i < items.length; i++) {
             items[i].classList.toggle('active', items[i].dataset.url === state.currentUrl);
         }
-        // Scroll active into view
         var active = els.chapterList.querySelector('.crawler-ch-item.active');
         if (active) active.scrollIntoView({ block: 'nearest' });
     }
@@ -929,10 +1423,9 @@
         dbPut('novels', novel).then(function () {
             state.novelProject = novel;
             populateSidebar(parsed.chapterLinks);
-            // Replace save button with status
             var saveBtn = els.content.querySelector('#crawlerSaveNovel');
             if (saveBtn) {
-                saveBtn.textContent = 'Đã lưu!';
+                saveBtn.textContent = '\u0110\u00E3 l\u01B0u!';
                 saveBtn.disabled = true;
                 saveBtn.classList.remove('btn-accent');
                 saveBtn.classList.add('btn-green');
@@ -946,12 +1439,10 @@
 
         var novel = state.novelProject;
         if (!novel) {
-            // Auto-create novel project if we have sidebar data
-            alert('Hãy mở trang mục lục trước và nhấn "Lưu truyện này"');
+            alert('H\u00E3y m\u1EDF trang m\u1EE5c l\u1EE5c tr\u01B0\u1EDBc v\u00E0 nh\u1EA5n "L\u01B0u truy\u1EC7n n\u00E0y"');
             return;
         }
 
-        // Find chapter index
         var chapterIndex = -1;
         for (var i = 0; i < novel.chapters.length; i++) {
             if (novel.chapters[i].url === state.currentUrl) {
@@ -960,7 +1451,6 @@
             }
         }
         if (chapterIndex === -1) {
-            // Chapter not in list — append it
             chapterIndex = novel.chapters.length;
             novel.chapters.push({
                 index: chapterIndex,
@@ -980,26 +1470,25 @@
         };
 
         els.saveBtn.disabled = true;
-        els.saveBtn.textContent = 'Đang lưu...';
+        els.saveBtn.textContent = '\u0110ang l\u01B0u...';
 
         dbPut('chapter-content', chapterData).then(function () {
             novel.chapters[chapterIndex].saved = true;
             novel.savedCount = novel.chapters.filter(function (c) { return c.saved; }).length;
             return dbPut('novels', novel);
         }).then(function () {
-            els.saveBtn.textContent = 'Đã lưu ✓';
+            els.saveBtn.textContent = '\u0110\u00E3 l\u01B0u \u2713';
             els.saveBtn.classList.remove('btn-green');
             els.saveBtn.classList.add('btn-default');
             setTimeout(function () {
-                els.saveBtn.textContent = 'Lưu chương';
+                els.saveBtn.textContent = 'L\u01B0u ch\u01B0\u01A1ng';
                 els.saveBtn.classList.remove('btn-default');
                 els.saveBtn.classList.add('btn-green');
                 els.saveBtn.disabled = false;
             }, 2000);
-            // Update sidebar checkmark
             updateSidebarSaved();
         }).catch(function (err) {
-            els.saveBtn.textContent = 'Lỗi!';
+            els.saveBtn.textContent = 'L\u1ED7i!';
             els.saveBtn.disabled = false;
             console.error('Save chapter error:', err);
         });
@@ -1014,49 +1503,15 @@
             var ch = novel.chapters.find(function (c) { return c.url === url; });
             var savedSpan = items[i].querySelector('.crawler-ch-saved');
             if (savedSpan && ch && ch.saved) {
-                savedSpan.textContent = ' ✓';
+                savedSpan.textContent = ' \u2713';
             }
         }
-    }
-
-    // ===== Novels List =====
-
-    function renderNovelsList() {
-        dbGetAll('novels').then(function (novels) {
-            if (!novels.length) {
-                els.novelsList.innerHTML = '';
-                els.novelsEmpty.classList.remove('hidden');
-                return;
-            }
-            els.novelsEmpty.classList.add('hidden');
-            // Sort by date desc
-            novels.sort(function (a, b) { return (b.dateAdded || 0) - (a.dateAdded || 0); });
-
-            var html = '';
-            for (var i = 0; i < novels.length; i++) {
-                var n = novels[i];
-                var totalCh = n.chapters ? n.chapters.length : 0;
-                html += '<div class="crawler-novel-card">' +
-                    '<div class="crawler-novel-info">' +
-                        '<div class="crawler-novel-name">' + VP.escapeHtml(n.title) + '</div>' +
-                        '<div class="crawler-novel-meta">' + n.savedCount + '/' + totalCh + ' chương đã lưu</div>' +
-                    '</div>' +
-                    '<div class="crawler-novel-actions">' +
-                        '<button class="btn btn-accent crawler-novel-open" data-id="' + n.id + '">Mở</button>' +
-                        '<button class="btn btn-default crawler-novel-export" data-id="' + n.id + '">Xuất</button>' +
-                        '<button class="btn btn-red crawler-novel-delete" data-id="' + n.id + '">Xóa</button>' +
-                    '</div>' +
-                '</div>';
-            }
-            els.novelsList.innerHTML = html;
-        });
     }
 
     function openNovel(novelId) {
         dbGet('novels', novelId).then(function (novel) {
             if (!novel) return;
             state.novelProject = novel;
-            // Restore site config
             if (novel.siteConfig) {
                 state.siteConfig = novel.siteConfig;
             } else {
@@ -1066,14 +1521,13 @@
             if (state.siteConfig) {
                 els.siteSelect.value = state.siteConfig.id || 'auto';
             }
-            // Show browse view with chapter list
-            showBrowseView();
+            showView('browse');
             els.urlInput.value = novel.sourceUrl || '';
             populateSidebar(novel.chapters);
             els.content.innerHTML =
                 '<div class="crawler-index-title">' + VP.escapeHtml(novel.title) + '</div>' +
-                '<div class="crawler-index-info">' + novel.savedCount + '/' + novel.chapters.length + ' chương đã lưu</div>' +
-                '<p style="color:var(--text-secondary);margin-top:12px">Chọn một chương từ mục lục để đọc.</p>';
+                '<div class="crawler-index-info">' + novel.savedCount + '/' + novel.chapters.length + ' ch\u01B0\u01A1ng \u0111\u00E3 l\u01B0u</div>' +
+                '<p style="color:var(--text-secondary);margin-top:12px">Ch\u1ECDn m\u1ED9t ch\u01B0\u01A1ng t\u1EEB m\u1EE5c l\u1EE5c \u0111\u1EC3 \u0111\u1ECDc.</p>';
             els.sidebar.classList.remove('hidden');
         });
     }
@@ -1085,7 +1539,7 @@
             if (state.novelProject && state.novelProject.id === novelId) {
                 state.novelProject = null;
             }
-            renderNovelsList();
+            renderSavedNovels();
         });
     }
 
@@ -1096,17 +1550,15 @@
             if (!novel) return;
             return getNovelChapters(novelId).then(function (chapters) {
                 if (!chapters.length) {
-                    alert('Chưa lưu chương nào để xuất!');
+                    alert('Ch\u01B0a l\u01B0u ch\u01B0\u01A1ng n\u00E0o \u0111\u1EC3 xu\u1EA5t!');
                     return;
                 }
-                // Sort by chapterIndex
                 chapters.sort(function (a, b) { return a.chapterIndex - b.chapterIndex; });
-                // Concatenate
                 var fullText = '';
                 for (var i = 0; i < chapters.length; i++) {
                     var ch = chapters[i];
                     var chMeta = novel.chapters[ch.chapterIndex];
-                    var title = chMeta ? chMeta.title : ('Chương ' + (ch.chapterIndex + 1));
+                    var title = chMeta ? chMeta.title : ('Ch\u01B0\u01A1ng ' + (ch.chapterIndex + 1));
                     var content = ch.viEdited || ch.viContent || '';
                     fullText += title + '\n\n' + content + '\n\n';
                 }
@@ -1114,11 +1566,11 @@
                     novel.exportedBookId = result.id;
                     return dbPut('novels', novel);
                 }).then(function () {
-                    alert('Đã xuất "' + novel.title + '" vào Thư viện! (' + chapters.length + ' chương)');
+                    alert('\u0110\u00E3 xu\u1EA5t "' + novel.title + '" v\u00E0o Th\u01B0 vi\u1EC7n! (' + chapters.length + ' ch\u01B0\u01A1ng)');
                 });
             });
         }).catch(function (err) {
-            alert('Lỗi xuất: ' + err.message);
+            alert('L\u1ED7i xu\u1EA5t: ' + err.message);
         });
     }
 
@@ -1131,7 +1583,6 @@
         els.editVi.value = vi || '';
         els.editModal.classList.remove('hidden');
 
-        // Find current chapter index in novel
         editingChapterIndex = -1;
         if (state.novelProject) {
             for (var i = 0; i < state.novelProject.chapters.length; i++) {
@@ -1146,11 +1597,9 @@
     function saveEditedChapter() {
         var newVi = els.editVi.value;
         state.translatedContent = newVi;
-        // Re-render with edited content
         if (state.parsedPage) {
             renderChapterPage(state.parsedPage, newVi);
         }
-        // Save to IDB if chapter is saved
         if (state.novelProject && editingChapterIndex >= 0) {
             var key = [state.novelProject.id, editingChapterIndex];
             dbGet('chapter-content', key).then(function (existing) {
@@ -1175,6 +1624,8 @@
         deleteNovel: deleteNovel,
         exportToLibrary: exportToLibrary,
         getPresets: function () { return SITE_PRESETS.slice(); },
-        detectSite: detectSite
+        detectSite: detectSite,
+        openSiteHome: openSiteHome,
+        openNovelList: openNovelList
     };
 })();
