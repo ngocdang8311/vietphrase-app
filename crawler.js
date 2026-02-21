@@ -112,6 +112,9 @@
     }
 
     // ===== Site Presets =====
+    // NOTE: Sites behind Cloudflare bot challenge (69shuba.com, biquge.net)
+    // will return 403 via server proxy. Only sites without aggressive bot
+    // protection work (e.g. uukanshu.cc).
     var SITE_PRESETS = [
         {
             id: 'uukanshu',
@@ -132,7 +135,7 @@
         },
         {
             id: 'biquge',
-            name: 'Biquge variants',
+            name: 'Biquge (biquge.net)',
             urlPattern: /biquge|biqg|xbiquge|ibiquge|bqg/,
             novel: {
                 title: '#info h1, .info h1, h1',
@@ -149,7 +152,7 @@
         },
         {
             id: '69shu',
-            name: '69书吧 (69shuba)',
+            name: '69书吧 (69shuba.com)',
             urlPattern: /69shu/,
             novel: {
                 title: '.bread-crumbs a:last-child, h1',
