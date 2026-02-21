@@ -445,6 +445,15 @@
             letter-spacing: 0.5px;
         }
 
+        /* EPUB iframe */
+        #epubFrame {
+            width: 100%; height: 100%; border: none; display: none;
+            background: var(--reader-bg);
+        }
+        .reader-content-wrap.epub-active {
+            overflow: hidden;
+        }
+
         /* Responsive */
         @media (max-width: 700px) {
             .app { padding: 16px; padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
@@ -476,8 +485,8 @@
         </div>
 
         <div class="toolbar">
-            <button class="btn btn-accent" id="btnImportBook">Import .txt / .html</button>
-            <input type="file" id="bookFileInput" accept=".txt,.html,.htm" multiple style="display:none">
+            <button class="btn btn-accent" id="btnImportBook">Import .txt / .html / .epub</button>
+            <input type="file" id="bookFileInput" accept=".txt,.html,.htm,.epub" multiple style="display:none">
             <span class="storage-info" id="storageInfo"></span>
         </div>
 
@@ -486,7 +495,7 @@
         <div class="empty-state hidden" id="emptyState">
             <div class="empty-icon">&#x1F4DA;</div>
             <div class="empty-title">Ch&#432;a c&#243; s&#225;ch n&#224;o</div>
-            <div class="empty-sub">Import file .txt ho&#7863;c .html &#273;&#7875; b&#7855;t &#273;&#7847;u &#273;&#7885;c</div>
+            <div class="empty-sub">Import file .txt, .html ho&#7863;c .epub &#273;&#7875; b&#7855;t &#273;&#7847;u &#273;&#7885;c</div>
         </div>
 
         <footer style="text-align:center;padding:24px 0 12px;font-size:12px;color:var(--text-muted)">
@@ -601,7 +610,9 @@
     </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer onload="window.__onGisLoaded && window.__onGisLoaded()"></script>
+    <script src="lib/jszip.min.js"></script>
     <script src="utils.js"></script>
+    <script src="epub-engine.js"></script>
     <script src="reader-lib.js"></script>
     <script src="sync-common.js"></script>
     <script src="cloud-sync.js"></script>

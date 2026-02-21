@@ -133,6 +133,40 @@
         });
     }
 
+    // Import EPUB book: stores ArrayBuffer in books-content, parsed metadata in books
+    function importEpubBook(title, arrayBuffer, epubMeta) {
+        var id = generateId();
+        var tocChapters = (epubMeta.toc && epubMeta.toc.length > 0)
+            ? epubMeta.toc.map(function (t) { return { title: t.title, href: t.href }; })
+            : epubMeta.spine.map(function (s, i) {
+                return { title: 'Chapter ' + (i + 1), href: s.href };
+            });
+        var meta = {
+            id: id,
+            title: title,
+            size: arrayBuffer.byteLength,
+            dateAdded: Date.now(),
+            format: 'epub',
+            chapters: { hasChapters: true, chapters: tocChapters },
+            epubSpine: epubMeta.spine
+        };
+        if (epubMeta.metadata && epubMeta.metadata.author) {
+            meta.author = epubMeta.metadata.author;
+        }
+        return openDB().then(function (db) {
+            return new Promise(function (resolve, reject) {
+                var tx = db.transaction(['books', 'books-content'], 'readwrite');
+                tx.objectStore('books').put(meta);
+                tx.objectStore('books-content').put({ id: id, content: arrayBuffer });
+                tx.oncomplete = function () {
+                    db.close();
+                    resolve({ id: id, chapterCount: tocChapters.length });
+                };
+                tx.onerror = function () { db.close(); reject(tx.error); };
+            });
+        });
+    }
+
     // Get full book (metadata + content merged)
     function getBook(id) {
         return openDB().then(function (db) {
@@ -224,6 +258,8 @@
                         if (b.cloudOnly) entry.cloudOnly = true;
                         if (b.cloudRef) entry.cloudRef = b.cloudRef;
                         if (b.driveFileId) entry.driveFileId = b.driveFileId;
+                        if (b.epubSpine) entry.epubSpine = b.epubSpine;
+                        if (b.author) entry.author = b.author;
                         result.push(entry);
                     }
                     result.reverse();
@@ -328,6 +364,18 @@
 
                     for (var i = 0; i < metas.length; i++) {
                         (function (meta) {
+                            // EPUB content is ArrayBuffer — can't serialize to JSON, skip it
+                            if (meta.format === 'epub') {
+                                var record = {};
+                                for (var k in meta) {
+                                    if (meta.hasOwnProperty(k)) record[k] = meta[k];
+                                }
+                                record.contentOmitted = true;
+                                results.push(record);
+                                pending--;
+                                if (pending === 0) { db.close(); resolve(results); }
+                                return;
+                            }
                             var cReq = contentStore.get(meta.id);
                             cReq.onsuccess = function () {
                                 var record = {};
@@ -375,6 +423,8 @@
                 var count = 0;
                 for (var i = 0; i < arr.length; i++) {
                     var rec = arr[i];
+                    // Skip EPUB records with omitted content (can't restore without .epub file)
+                    if (rec.contentOmitted) continue;
                     if (rec.id && rec.content) {
                         // Write metadata (without content)
                         var meta = {};
@@ -495,6 +545,7 @@
 
     window.ReaderLib = {
         importBook: importBook,
+        importEpubBook: importEpubBook,
         getBook: getBook,
         getBookMeta: getBookMeta,
         getBookContent: getBookContent,

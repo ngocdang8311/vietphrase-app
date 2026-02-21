@@ -310,6 +310,8 @@
             for (var i = 0; i < result.booksToUpload.length; i++) {
                 (function (book) {
                     uploadChain = uploadChain.then(function () {
+                        // Skip EPUB books (ArrayBuffer, too large)
+                        if (book.format === 'epub') return;
                         _progress('Uploading: ' + book.title + '...');
                         return _uploadBookContent(book.id).then(function (driveFileId) {
                             for (var j = 0; j < result.merged.bookList.length; j++) {
@@ -381,6 +383,9 @@
     }
 
     function downloadBook(bookInfo) {
+        if (bookInfo && bookInfo.format === 'epub') {
+            return Promise.reject(new Error('EPUB books must be re-imported locally'));
+        }
         if (!bookInfo || !bookInfo.driveFileId) {
             return Promise.reject(new Error('No driveFileId'));
         }

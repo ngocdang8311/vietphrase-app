@@ -349,9 +349,11 @@
             for (var i = 0; i < result.booksToUpload.length; i++) {
                 (function (book) {
                     uploadChain = uploadChain.then(function () {
+                        // Skip EPUB books (ArrayBuffer, too large for Gist)
+                        if (book.format === 'epub') return;
                         _progress('Uploading: ' + book.title + '...');
                         return ReaderLib.getBookContent(book.id).then(function (content) {
-                            if (!content) return;
+                            if (!content || content instanceof ArrayBuffer) return;
                             var fname = 'book_' + book.id + '.txt';
                             gistUpdates[fname] = content;
                             // Set cloudRef in merged bookList
@@ -415,6 +417,9 @@
 
     // Download a cloud-only book
     function downloadBook(bookInfo) {
+        if (bookInfo && bookInfo.format === 'epub') {
+            return Promise.reject(new Error('EPUB books must be re-imported locally'));
+        }
         if (!bookInfo || !bookInfo.cloudRef) {
             return Promise.reject(new Error('No cloudRef'));
         }
