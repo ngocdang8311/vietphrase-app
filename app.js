@@ -729,7 +729,7 @@
             var file = backupFileInput.files[0];
             if (!file) return;
             backupStatus.textContent = '\u0110ang nh\u1EADp backup...';
-            BackupManager.importBackup(file).then(function (summary) {
+            BackupManager.importBackup(file, function (msg) { backupStatus.textContent = msg; }).then(function (summary) {
                 var msg = 'Kh\u00F4i ph\u1EE5c: ';
                 var parts = [];
                 if (summary.books) parts.push(summary.books + ' s\u00E1ch');

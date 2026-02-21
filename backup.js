@@ -134,6 +134,8 @@
         return m ? m[1].toLowerCase() : '';
     }
 
+    function _noop() {}
+
     // ===== Export =====
 
     function exportBackup() {
@@ -219,22 +221,25 @@
     }
 
     // ===== Import =====
+    // onProgress(msg): optional callback for UI status updates
 
-    function importBackup(file) {
+    function importBackup(file, onProgress) {
+        var progress = onProgress || _noop;
         var name = (file.name || '').toLowerCase();
         if (name.endsWith('.json')) {
+            progress('Reading JSON...');
             return file.text().then(function (text) {
-                return _importFromJson(text);
+                return _importFromJson(text, progress);
             });
         } else if (name.endsWith('.zip')) {
-            return _importFromZip(file);
+            return _importFromZip(file, progress);
         } else {
             return Promise.reject(new Error('Unsupported format. Use .zip or .json'));
         }
     }
 
     // Legacy JSON import (backward compatibility)
-    function _importFromJson(jsonText) {
+    function _importFromJson(jsonText, progress) {
         var backup;
         try {
             backup = JSON.parse(jsonText);
@@ -244,11 +249,12 @@
         if (!backup.data) {
             return Promise.reject(new Error('Invalid backup format'));
         }
-        return _restoreData(backup.data, null);
+        return _restoreData(backup.data, null, progress);
     }
 
     // ZIP import using vendored zip.js
-    function _importFromZip(file) {
+    function _importFromZip(file, progress) {
+        progress('Reading ZIP...');
         return import('./foliate-js/vendor/zip.js').then(function (zipMod) {
             var reader = new zipMod.ZipReader(new zipMod.BlobReader(file));
             return reader.getEntries().then(function (entries) {
@@ -268,6 +274,7 @@
                     });
                 }
 
+                progress('Reading metadata...');
                 // Read metadata.json
                 return metaEntry.getData(new zipMod.TextWriter()).then(function (jsonText) {
                     var backup;
@@ -297,11 +304,13 @@
                     }
 
                     // Read ebook content from ZIP sequentially
-                    // (zip.js doesn't reliably support parallel getData calls)
                     var ebookMap = {};
                     var chain = Promise.resolve();
+                    var ebookIdx = 0;
                     ebookBooks.forEach(function (book) {
                         chain = chain.then(function () {
+                            ebookIdx++;
+                            progress('Reading ebook ' + ebookIdx + '/' + ebookBooks.length + '...');
                             return entryMap[book.zipPath].getData(new zipMod.BlobWriter()).then(function (blob) {
                                 return blob.arrayBuffer();
                             }).then(function (ab) {
@@ -311,23 +320,27 @@
                     });
 
                     return chain.then(function () {
-                        return reader.close().then(function () {
-                            return _restoreData(d, ebookMap);
-                        });
+                        return reader.close();
+                    }).then(function () {
+                        return _restoreData(d, ebookMap, progress);
                     }).catch(function (err) {
-                        return reader.close().then(function () { throw err; });
+                        return reader.close().then(
+                            function () { throw err; },
+                            function () { throw err; }
+                        );
                     });
                 });
             });
         });
     }
 
-    // Shared restore logic
+    // Shared restore logic — fully sequential to avoid IDB contention
     // ebookMap: null (JSON import) or { bookId: ArrayBuffer } (ZIP import)
-    function _restoreData(d, ebookMap) {
+    function _restoreData(d, ebookMap, progress) {
         var summary = { settings: false, phrases: 0, dicts: 0, books: 0 };
 
-        // Restore settings
+        // Step 1: Restore settings (sync)
+        progress('Restoring settings...');
         if (d.settings) {
             if (d.settings.theme) localStorage.setItem('theme', d.settings.theme);
             if (d.settings.readerSettings) localStorage.setItem('readerSettings', d.settings.readerSettings);
@@ -335,7 +348,7 @@
             summary.settings = true;
         }
 
-        // Restore custom phrases (only if DictEngine available)
+        // Step 2: Restore custom phrases (sync)
         if (d.customPhrases && window.DictEngine && DictEngine.isReady) {
             var current = DictEngine.getCustomEntries();
             for (var zh in d.customPhrases) {
@@ -347,19 +360,18 @@
             DictEngine.setCustomEntries(current);
         }
 
-        var promises = [];
-
-        // Restore imported dicts (only if DictEngine available)
-        if (d.importedDicts && d.importedDicts.length && window.DictEngine) {
-            promises.push(
-                DictEngine.restoreImports(d.importedDicts).then(function (count) {
+        // Step 3: Restore imported dicts (async, sequential)
+        return Promise.resolve().then(function () {
+            if (d.importedDicts && d.importedDicts.length && window.DictEngine && DictEngine.isReady) {
+                progress('Restoring dictionaries...');
+                return DictEngine.restoreImports(d.importedDicts).then(function (count) {
                     summary.dicts = count;
-                }).catch(function () { summary.dicts = 0; })
-            );
-        }
+                }).catch(function () { summary.dicts = 0; });
+            }
+        }).then(function () {
+            // Step 4: Restore books — separate regular and ebook
+            if (!d.books || !d.books.length) return;
 
-        // Restore books — split into regular (text) and ebook
-        if (d.books && d.books.length) {
             var regularBooks = [];
             var ebookBooksToRestore = [];
 
@@ -372,18 +384,21 @@
                 }
             }
 
-            // Restore regular (text) books via existing batch method
+            // 4a: Restore regular (text) books
+            var chain = Promise.resolve();
             if (regularBooks.length) {
-                promises.push(
-                    ReaderLib.restoreBooks(regularBooks).then(function (count) {
+                chain = chain.then(function () {
+                    progress('Restoring text books...');
+                    return ReaderLib.restoreBooks(regularBooks).then(function (count) {
                         summary.books += count;
-                    }).catch(function () {})
-                );
+                    }).catch(function () {});
+                });
             }
 
-            // Restore ebook books individually: meta + binary content
-            for (var j = 0; j < ebookBooksToRestore.length; j++) {
-                (function (book) {
+            // 4b: Restore ebook books sequentially (meta + content per book)
+            ebookBooksToRestore.forEach(function (book, idx) {
+                chain = chain.then(function () {
+                    progress('Restoring ebook ' + (idx + 1) + '/' + ebookBooksToRestore.length + '...');
                     // Clean metadata: strip zipPath and contentOmitted
                     var meta = {};
                     for (var k in book) {
@@ -392,27 +407,24 @@
                         }
                     }
                     var content = ebookMap[book.id];
-                    promises.push(
-                        ReaderLib.saveBookMeta(meta).then(function () {
-                            return ReaderLib.saveBookContent(meta.id, content);
-                        }).then(function () {
-                            summary.books++;
-                        }).catch(function (err) {
-                            console.warn('[Backup] Failed to restore ebook:', meta.title, err);
-                        })
-                    );
-                })(ebookBooksToRestore[j]);
+                    return ReaderLib.saveBookMeta(meta).then(function () {
+                        return ReaderLib.saveBookContent(meta.id, content);
+                    }).then(function () {
+                        summary.books++;
+                    }).catch(function (err) {
+                        console.warn('[Backup] Failed to restore ebook:', meta.title, err);
+                    });
+                });
+            });
+
+            return chain;
+        }).then(function () {
+            // Step 5: Restore progress
+            if (d.progress && d.progress.length) {
+                progress('Restoring progress...');
+                return ReaderLib.restoreProgress(d.progress).catch(function () {});
             }
-        }
-
-        // Restore progress
-        if (d.progress && d.progress.length) {
-            promises.push(
-                ReaderLib.restoreProgress(d.progress).catch(function () {})
-            );
-        }
-
-        return Promise.all(promises).then(function () {
+        }).then(function () {
             return summary;
         });
     }
