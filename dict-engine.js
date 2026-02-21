@@ -55,10 +55,10 @@
 
     // Extract clean Vietnamese meaning from raw dict value
     // Handles both standard format (value/alt) and extended format:
-    //   +[pinyin] Hán Việt: XXX\n\t1. meaning1; meaning2\n\t2. ...//+[pinyin2] ...
+    //   ✚[pinyin] Hán Việt: XXX\n\t1. meaning1; meaning2\n\t2. ...\n✚[pinyin2] ...
     function extractMeaning(raw) {
-        // Extended format: contains +[pinyin]
-        if (raw.indexOf('+[') !== -1) {
+        // Extended format: contains ✚[ (U+271A) or +[ prefix
+        if (raw.indexOf('\u271A[') !== -1 || raw.indexOf('+[') !== -1) {
             // Try first numbered meaning \t1. across all readings
             var t1 = raw.indexOf('\\t1.');
             if (t1 !== -1) {
@@ -81,6 +81,18 @@
                 if (hvEnd !== -1) hvVal = hvVal.substring(0, hvEnd);
                 hvVal = hvVal.split(/[;；]/)[0].trim();
                 if (hvVal) return hvVal;
+            }
+            // Fallback: strip ✚[...] / +[...] prefix, take direct meaning
+            var stripped = raw.replace(/[\u271A+]\s*\[[^\]]*\]\s*/g, '');
+            // Remove "Hán Việt: XXX " prefix if present
+            stripped = stripped.replace(/Hán Việt:\s*\S+\s*/g, '').trim();
+            // Clean literal escape sequences
+            stripped = stripped.replace(/\\[nt]/g, ' ').trim();
+            if (stripped) {
+                var semi2 = stripped.indexOf(';');
+                if (semi2 !== -1) stripped = stripped.substring(0, semi2).trim();
+                stripped = stripped.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+                if (stripped) return stripped;
             }
         }
         // Standard format: split by // first, then / for alternatives
