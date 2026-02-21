@@ -535,8 +535,17 @@
             iframe.onload = function () {
                 try {
                     var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    // Property assignment — replaces previous handler, no accumulation
-                    iframeDoc.onclick = function () {
+                    // Intercept clicks: internal links → navigate chapters; toggle immersive for non-links
+                    iframeDoc.onclick = function (e) {
+                        var link = e.target.closest ? e.target.closest('a[href]') : null;
+                        if (link) {
+                            var href = link.getAttribute('href');
+                            // Skip external links
+                            if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0 || href.indexOf('mailto:') === 0)) return;
+                            e.preventDefault();
+                            if (href) _navigateEpubLink(href);
+                            return;
+                        }
                         if (iframe.contentWindow.getSelection().toString()) return;
                         readerOverlay.classList.toggle('immersive');
                     };
@@ -570,8 +579,8 @@
         });
     }
 
-    function buildEpubSrcdoc(chapterHtml) {
-        // Determine reader theme colors
+    function buildEpubSrcdoc(chapter) {
+        // chapter = { head, body } from EpubEngine.getChapterContent()
         var cs = getComputedStyle(readerOverlay);
         var bg = cs.getPropertyValue('--reader-bg').trim() || '#0a0a12';
         var fg = cs.getPropertyValue('--reader-text').trim() || '#d4d0e0';
@@ -588,30 +597,66 @@
             'img, svg, video { max-width: 100%; height: auto; }' +
             'a { color: inherit; }';
 
-        // Extract body content if full XHTML document
-        var bodyContent = chapterHtml;
-        var headContent = '';
-        var bodyMatch = chapterHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (bodyMatch) {
-            bodyContent = bodyMatch[1];
-            // Extract head styles/links
-            var headMatch = chapterHtml.match(/<head[^>]*>([\s\S]*)<\/head>/i);
-            if (headMatch) {
-                // Keep only style and link tags from head
-                var styleRe = /<(?:style|link)[^>]*>(?:[\s\S]*?<\/style>)?/gi;
-                var m;
-                while ((m = styleRe.exec(headMatch[1])) !== null) {
-                    headContent += m[0];
-                }
-            }
-        }
-
         return '<!DOCTYPE html><html><head>' +
             '<meta charset="UTF-8">' +
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-            headContent +
+            (chapter.head || '') +
             '<style id="userStyles">' + userCss + '</style>' +
-            '</head><body>' + bodyContent + '</body></html>';
+            '</head><body>' + (chapter.body || '') + '</body></html>';
+    }
+
+    function _navigateEpubLink(href) {
+        if (!currentEpub || !currentChapters) return;
+        // Resolve relative href against current chapter
+        var currentChHref = currentChapters.chapters[currentChapterIndex].href;
+        var baseParts = currentChHref.split('/');
+        baseParts.pop();
+        var resolvedHref = href;
+        // If it starts with # it's an anchor in the current page — just scroll
+        if (href.charAt(0) === '#') {
+            var iframe = document.getElementById('epubFrame');
+            if (iframe) {
+                try {
+                    var target = iframe.contentDocument.getElementById(href.substring(1)) ||
+                        iframe.contentDocument.querySelector('[name="' + CSS.escape(href.substring(1)) + '"]');
+                    if (target) target.scrollIntoView({ behavior: 'smooth' });
+                } catch (e) {}
+            }
+            return;
+        }
+        // Resolve relative path
+        var hrefParts = href.split('#');
+        var filePart = hrefParts[0];
+        if (filePart && filePart.indexOf('://') === -1 && filePart.charAt(0) !== '/') {
+            var parts = baseParts.slice();
+            var segs = filePart.split('/');
+            for (var i = 0; i < segs.length; i++) {
+                if (segs[i] === '..') parts.pop();
+                else if (segs[i] !== '.' && segs[i] !== '') parts.push(segs[i]);
+            }
+            resolvedHref = parts.join('/');
+        }
+        var cleanResolved = resolvedHref.split('#')[0].split('?')[0];
+        // Find matching chapter
+        var chapters = currentChapters.chapters;
+        for (var ci = 0; ci < chapters.length; ci++) {
+            var chClean = chapters[ci].href.split('#')[0].split('?')[0];
+            if (chClean === cleanResolved) {
+                renderEpubChapter(ci);
+                return;
+            }
+        }
+        // Not in chapter list — try spine
+        if (currentEpub.spine) {
+            for (var si = 0; si < currentEpub.spine.length; si++) {
+                var spClean = currentEpub.spine[si].href.split('#')[0].split('?')[0];
+                if (spClean === cleanResolved) {
+                    // Find or create chapter entry for this spine item
+                    renderEpubChapter(Math.min(si, chapters.length - 1));
+                    return;
+                }
+            }
+        }
     }
 
     function updateEpubScrollProgress() {

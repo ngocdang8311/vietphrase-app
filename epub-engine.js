@@ -181,7 +181,9 @@
 
             function getResource(href) {
                 if (resourceCache[href]) return Promise.resolve(resourceCache[href]);
-                var file = findInZip(zip, href);
+                // Strip query string for ZIP lookup (e.g. image.jpg?v=1)
+                var cleanPath = href.split('?')[0];
+                var file = findInZip(zip, cleanPath);
                 if (!file) return Promise.resolve(null);
                 return file.async('blob').then(function (blob) {
                     var mime = guessMime(href);
@@ -194,71 +196,162 @@
             }
 
             function getChapterContent(href) {
-                // Strip fragment
-                var cleanHref = href.split('#')[0];
+                // Strip fragment and query string
+                var cleanHref = href.split('#')[0].split('?')[0];
                 var file = findInZip(zip, cleanHref);
                 if (!file) return Promise.reject(new Error('Chapter not found: ' + cleanHref));
 
                 return file.async('text').then(function (html) {
-                    // Collect all resource references: { raw, resolved }
-                    var resourceMap = {}; // resolved -> [raw1, raw2, ...]
+                    // Use DOM to safely rewrite resource URLs without touching <a> links
+                    // Parse as HTML (works for XHTML too, more forgiving)
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
 
-                    function addRef(rawRef) {
-                        if (rawRef.indexOf('data:') === 0 || rawRef.indexOf('http://') === 0 || rawRef.indexOf('https://') === 0) return;
-                        var resolved = resolveHref(cleanHref, rawRef);
-                        if (!resourceMap[resolved]) resourceMap[resolved] = [];
-                        if (resourceMap[resolved].indexOf(rawRef) === -1) {
-                            resourceMap[resolved].push(rawRef);
+                    // Collect all resource refs that need blob URL rewriting
+                    var refEntries = []; // [{ el, attr, rawRef }]
+
+                    // img/video/audio/source src
+                    var srcEls = doc.querySelectorAll('img[src], video[src], audio[src], source[src], input[src]');
+                    for (var si = 0; si < srcEls.length; si++) {
+                        var val = srcEls[si].getAttribute('src');
+                        if (val && !_isAbsolute(val)) refEntries.push({ el: srcEls[si], attr: 'src', rawRef: val });
+                    }
+
+                    // srcset on img and source
+                    var srcsetEls = doc.querySelectorAll('img[srcset], source[srcset]');
+                    for (var ss = 0; ss < srcsetEls.length; ss++) {
+                        refEntries.push({ el: srcsetEls[ss], attr: 'srcset', rawRef: srcsetEls[ss].getAttribute('srcset') });
+                    }
+
+                    // link[href] (stylesheets) — NOT <a> tags
+                    var linkEls = doc.querySelectorAll('link[href]');
+                    for (var li = 0; li < linkEls.length; li++) {
+                        var lval = linkEls[li].getAttribute('href');
+                        if (lval && !_isAbsolute(lval)) refEntries.push({ el: linkEls[li], attr: 'href', rawRef: lval });
+                    }
+
+                    // SVG image xlink:href / href
+                    var imgEls = doc.querySelectorAll('image');
+                    for (var ii = 0; ii < imgEls.length; ii++) {
+                        var xhref = imgEls[ii].getAttributeNS('http://www.w3.org/1999/xlink', 'href') || imgEls[ii].getAttribute('href');
+                        if (xhref && !_isAbsolute(xhref)) {
+                            refEntries.push({ el: imgEls[ii], attr: imgEls[ii].hasAttributeNS('http://www.w3.org/1999/xlink', 'href') ? 'xlink:href' : 'href', rawRef: xhref });
                         }
                     }
 
-                    // Find img src, image xlink:href, link href, source src
-                    var srcRe = /(?:src|href|xlink:href)\s*=\s*["']([^"'#]+?)["']/gi;
-                    var match;
-                    while ((match = srcRe.exec(html)) !== null) {
-                        addRef(match[1]);
+                    // Also collect url() refs from <style> and style attributes for pre-fetching
+                    var cssUrlRe = /url\(\s*["']?([^"')]+?)["']?\s*\)/gi;
+                    var styleEls2 = doc.querySelectorAll('style');
+                    for (var csi = 0; csi < styleEls2.length; csi++) {
+                        var cssMatch;
+                        while ((cssMatch = cssUrlRe.exec(styleEls2[csi].textContent)) !== null) {
+                            if (!_isAbsolute(cssMatch[1])) {
+                                refEntries.push({ el: null, attr: 'css-url', rawRef: cssMatch[1] });
+                            }
+                        }
+                    }
+                    var styledEls2 = doc.querySelectorAll('[style]');
+                    for (var csai = 0; csai < styledEls2.length; csai++) {
+                        var cssMatch2;
+                        while ((cssMatch2 = cssUrlRe.exec(styledEls2[csai].getAttribute('style'))) !== null) {
+                            if (!_isAbsolute(cssMatch2[1])) {
+                                refEntries.push({ el: null, attr: 'css-url', rawRef: cssMatch2[1] });
+                            }
+                        }
                     }
 
-                    // Find url() in inline styles and style tags
-                    var urlRe = /url\(\s*["']?([^"')#]+?)["']?\s*\)/gi;
-                    while ((match = urlRe.exec(html)) !== null) {
-                        addRef(match[1]);
+                    // Collect unique resolved paths
+                    var resourceMap = {}; // resolved -> [{ entry, rawRef }]
+                    for (var ri = 0; ri < refEntries.length; ri++) {
+                        var entry = refEntries[ri];
+                        if (entry.attr === 'srcset') {
+                            // Parse srcset: "url1 1x, url2 2x" — each URL needs resolving
+                            var parts = entry.rawRef.split(',');
+                            for (var pi = 0; pi < parts.length; pi++) {
+                                var trimmed = parts[pi].trim();
+                                var spaceIdx = trimmed.indexOf(' ');
+                                var srcUrl = spaceIdx > 0 ? trimmed.substring(0, spaceIdx) : trimmed;
+                                if (srcUrl && !_isAbsolute(srcUrl)) {
+                                    var resolved = resolveHref(cleanHref, srcUrl);
+                                    if (!resourceMap[resolved]) resourceMap[resolved] = [];
+                                    resourceMap[resolved].push({ entry: entry, rawUrl: srcUrl, partIndex: pi });
+                                }
+                            }
+                        } else {
+                            var rawClean = entry.rawRef.split('#')[0];
+                            var resolved2 = resolveHref(cleanHref, rawClean);
+                            if (!resourceMap[resolved2]) resourceMap[resolved2] = [];
+                            // css-url entries only need pre-fetching into resourceCache, no DOM mutation
+                            if (entry.attr !== 'css-url') {
+                                resourceMap[resolved2].push({ entry: entry, rawUrl: null, partIndex: -1 });
+                            } else if (!resourceMap[resolved2].length) {
+                                // Ensure key exists so getResource is called
+                                resourceMap[resolved2].push(null);
+                            }
+                        }
                     }
 
                     // Resolve all resources to blob URLs
                     var resolvedKeys = Object.keys(resourceMap);
                     var promises = resolvedKeys.map(function (rHref) {
                         return getResource(rHref).then(function (blobUrl) {
-                            return { resolved: rHref, rawRefs: resourceMap[rHref], blobUrl: blobUrl };
+                            return { resolved: rHref, refs: resourceMap[rHref], blobUrl: blobUrl };
                         });
                     });
 
                     return Promise.all(promises).then(function (mappings) {
-                        var rewritten = html;
-                        for (var i = 0; i < mappings.length; i++) {
-                            if (!mappings[i].blobUrl) continue;
-                            var blobUrl = mappings[i].blobUrl;
-                            var rawRefs = mappings[i].rawRefs;
-
-                            // Build alternation of all raw variants
-                            var alts = rawRefs.map(escapeRegExp).join('|');
-
-                            // Replace attribute references
-                            rewritten = rewritten.replace(
-                                new RegExp('((?:src|href|xlink:href)\\s*=\\s*["\'])(' + alts + ')(["\'])', 'gi'),
-                                '$1' + blobUrl + '$3'
-                            );
-
-                            // Replace url() references
-                            rewritten = rewritten.replace(
-                                new RegExp('(url\\(\\s*["\']?)(' + alts + ')(["\']?\\s*\\))', 'gi'),
-                                '$1' + blobUrl + '$3'
-                            );
+                        // Apply blob URLs to DOM elements
+                        for (var mi = 0; mi < mappings.length; mi++) {
+                            if (!mappings[mi].blobUrl) continue;
+                            var blobUrl = mappings[mi].blobUrl;
+                            var refs = mappings[mi].refs;
+                            for (var ri2 = 0; ri2 < refs.length; ri2++) {
+                                var ref = refs[ri2];
+                                if (!ref || !ref.entry || !ref.entry.el) continue;
+                                var el = ref.entry.el;
+                                var attr = ref.entry.attr;
+                                if (attr === 'srcset') {
+                                    // Rewrite individual URL within srcset
+                                    var curSrcset = el.getAttribute('srcset');
+                                    if (curSrcset && ref.rawUrl) {
+                                        el.setAttribute('srcset', curSrcset.split(ref.rawUrl).join(blobUrl));
+                                    }
+                                } else if (attr === 'xlink:href') {
+                                    el.setAttributeNS('http://www.w3.org/1999/xlink', 'href', blobUrl);
+                                } else {
+                                    el.setAttribute(attr, blobUrl);
+                                }
+                            }
                         }
 
-                        return rewritten;
+                        // Rewrite url() in <style> tags and style attributes via text replacement
+                        var styleEls = doc.querySelectorAll('style');
+                        for (var sti = 0; sti < styleEls.length; sti++) {
+                            styleEls[sti].textContent = _rewriteCssUrls(styleEls[sti].textContent, cleanHref);
+                        }
+                        // Inline style attributes
+                        var styledEls = doc.querySelectorAll('[style]');
+                        for (var stai = 0; stai < styledEls.length; stai++) {
+                            var orig = styledEls[stai].getAttribute('style');
+                            var rewritten = _rewriteCssUrls(orig, cleanHref);
+                            if (rewritten !== orig) styledEls[stai].setAttribute('style', rewritten);
+                        }
+
+                        // Serialize back to HTML
+                        // Use head + body content separately to preserve structure
+                        var headHtml = doc.head ? doc.head.innerHTML : '';
+                        var bodyHtml = doc.body ? doc.body.innerHTML : '';
+                        return { head: headHtml, body: bodyHtml };
                     });
                 });
+
+                function _rewriteCssUrls(css, baseHref) {
+                    return css.replace(/url\(\s*["']?([^"')]+?)["']?\s*\)/gi, function (full, rawUrl) {
+                        if (_isAbsolute(rawUrl)) return full;
+                        var resolved = resolveHref(baseHref, rawUrl.split('#')[0]);
+                        var cached = resourceCache[resolved];
+                        return cached ? 'url(' + cached + ')' : full;
+                    });
+                }
             }
 
             function revokeAll() {
@@ -370,8 +463,9 @@
         return deduped;
     }
 
-    function escapeRegExp(str) {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    function _isAbsolute(url) {
+        return !url || url.indexOf('data:') === 0 || url.indexOf('http://') === 0 ||
+            url.indexOf('https://') === 0 || url.indexOf('blob:') === 0;
     }
 
     window.EpubEngine = {
