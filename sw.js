@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v19';
+const CACHE_NAME = 'cnvn-dict-v20';
 const APP_ASSETS = [
     '/',
     '/index.html',
@@ -16,8 +16,17 @@ const APP_ASSETS = [
     '/sync-common.js',
     '/cloud-sync.js',
     '/github-sync.js',
-    '/lib/jszip.min.js',
-    '/epub-engine.js'
+    '/epub-bridge.js',
+    '/foliate-js/view.js',
+    '/foliate-js/paginator.js',
+    '/foliate-js/epub.js',
+    '/foliate-js/epubcfi.js',
+    '/foliate-js/progress.js',
+    '/foliate-js/overlayer.js',
+    '/foliate-js/text-walker.js',
+    '/foliate-js/fixed-layout.js',
+    '/foliate-js/vendor/zip.js',
+    '/foliate-js/vendor/fflate.js'
 ];
 
 self.addEventListener('install', function (event) {

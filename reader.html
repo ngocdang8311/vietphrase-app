@@ -445,10 +445,16 @@
             letter-spacing: 0.5px;
         }
 
-        /* EPUB iframe */
-        #epubFrame {
-            width: 100%; height: 100%; border: none; display: none;
-            background: var(--reader-bg);
+        /* EPUB: foliate-view replaces old iframe */
+        foliate-view {
+            width: 100%; height: 100%;
+            display: none;
+        }
+        .reader-content-wrap.epub-active foliate-view {
+            display: block;
+        }
+        .reader-content-wrap.epub-active #readerContent {
+            display: none;
         }
         .reader-content-wrap.epub-active {
             overflow: hidden;
@@ -610,9 +616,8 @@
     </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer onload="window.__onGisLoaded && window.__onGisLoaded()"></script>
-    <script src="lib/jszip.min.js"></script>
+    <script type="module" src="epub-bridge.js"></script>
     <script src="utils.js"></script>
-    <script src="epub-engine.js"></script>
     <script src="reader-lib.js"></script>
     <script src="sync-common.js"></script>
     <script src="cloud-sync.js"></script>

@@ -92,7 +92,7 @@
     var scrollLines = null;       // lazy scroll-mode rendering
     var renderedLineCount = 0;
     var LINES_PER_CHUNK = 300;
-    var currentEpub = null;       // parsed EpubEngine result (while reading EPUB)
+    var epubView = null;           // <foliate-view> element (while reading EPUB)
 
     // Reading settings
     var settings = { fontSize: 18, lineHeight: 1.8, fontFamily: 'sans', readerTheme: 'default' };
@@ -122,8 +122,23 @@
         selFont.value = settings.fontFamily;
         selReaderTheme.value = settings.readerTheme;
         document.documentElement.setAttribute('data-reader-theme', settings.readerTheme);
-        // Update EPUB iframe styles if active
-        if (currentEpub) applyEpubSettings();
+        // Update EPUB styles if active
+        if (epubView) applyEpubSettings();
+    }
+
+    // --- Bridge helper: wait for foliate-js ES module to load ---
+    var _bridgePromise = null;
+    function waitForBridge() {
+        if (window.EpubBridge) return Promise.resolve();
+        if (!_bridgePromise) {
+            _bridgePromise = new Promise(function (resolve) {
+                window._epubBridgeResolve = function () {
+                    _bridgePromise = null;
+                    resolve();
+                };
+            });
+        }
+        return _bridgePromise;
     }
 
     // --- Storage info ---
@@ -178,7 +193,9 @@
                         var info = b.chapters || { hasChapters: false, chapters: [] };
                         var progressText = '';
                         if (p) {
-                            if (p.mode === 'chapter' && info.hasChapters) {
+                            if (p.mode === 'epub' && p.fraction != null) {
+                                progressText = Math.round(p.fraction * 100) + '% \u0111\u00E3 \u0111\u1ECDc';
+                            } else if (p.mode === 'chapter' && info.hasChapters) {
                                 progressText = 'Ch\u01B0\u01A1ng ' + (p.chapterIndex + 1) + '/' + info.chapters.length;
                             } else if (p.scrollPercent != null) {
                                 progressText = Math.round(p.scrollPercent) + '% \u0111\u00E3 \u0111\u1ECDc';
@@ -270,12 +287,29 @@
                 }
                 var reader = new FileReader();
                 if (file.name.match(/\.epub$/i)) {
-                    // EPUB import
+                    // EPUB import via foliate-js bridge
                     reader.onload = function (ev) {
                         var ab = ev.target.result;
-                        EpubEngine.parse(ab).then(function (epub) {
-                            var title = epub.metadata.title || file.name.replace(/\.epub$/i, '');
-                            return ReaderLib.importEpubBook(title, ab, epub);
+                        waitForBridge().then(function () {
+                            return EpubBridge.parseMetadata(ab);
+                        }).then(function (parsed) {
+                            var title = parsed.metadata.title || file.name.replace(/\.epub$/i, '');
+                            // Build spine from toc if available, otherwise generate from section count
+                            var spine;
+                            if (parsed.toc.length > 0) {
+                                spine = parsed.toc.map(function (t) { return { href: t.href }; });
+                            } else {
+                                spine = [];
+                                for (var si = 0; si < parsed.sectionCount; si++) {
+                                    spine.push({ href: String(si) });
+                                }
+                            }
+                            var epubMeta = {
+                                metadata: parsed.metadata,
+                                toc: parsed.toc,
+                                spine: spine
+                            };
+                            return ReaderLib.importEpubBook(title, ab, epubMeta);
                         }).then(function () {
                             pending--;
                             if (pending === 0) renderLibrary();
@@ -457,7 +491,7 @@
         return parts.join('');
     }
 
-    // ===== EPUB Reader =====
+    // ===== EPUB Reader (foliate-js powered) =====
 
     function openEpubBook(book) {
         var content = book.content; // ArrayBuffer from IDB
@@ -465,43 +499,126 @@
             alert('Kh\u00F4ng t\u00ECm th\u1EA5y n\u1ED9i dung EPUB');
             return;
         }
-        // Cleanup previous EPUB if any
-        if (currentEpub) { currentEpub.revokeAll(); currentEpub = null; }
-        _epubRestoreScroll = 0;
+        // Cleanup previous EPUB view if any
+        if (epubView) { epubView.close(); epubView.remove(); epubView = null; }
 
-        EpubEngine.parse(content).then(function (epub) {
-            currentEpub = epub;
+        waitForBridge().then(function () {
+            var blob = new Blob([content], { type: 'application/epub+zip' });
+            var view = EpubBridge.createView();
+            epubView = view;
             currentBook = book;
             currentMode = 'chapter';
             scrollLines = null;
 
-            // Build chapter list from TOC or spine
-            var chapters = epub.toc.length > 0 ? epub.toc : epub.spine.map(function (s, i) {
-                return { title: 'Chapter ' + (i + 1), href: s.href };
-            });
-            currentChapters = { hasChapters: true, chapters: chapters };
+            // Append to DOM before opening
+            readerContentWrap.appendChild(view);
 
-            readerBookTitle.textContent = book.title;
+            return view.open(blob).then(function () {
+                var bookObj = view.book;
 
-            return ReaderLib.getProgress(book.id).then(function (progress) {
-                currentChapterIndex = progress && progress.mode === 'chapter' ? progress.chapterIndex : 0;
-                if (currentChapterIndex >= chapters.length) currentChapterIndex = 0;
-
-                showChapterMode();
-                renderEpubChapter(currentChapterIndex);
-
-                readerOverlay.classList.remove('hidden');
-                applySettings();
-
-                // Save as last read
-                localStorage.setItem('lastReadBook', JSON.stringify({
-                    id: book.id, title: book.title, chapterIndex: currentChapterIndex
-                }));
-
-                // Restore scroll after iframe loads
-                if (progress && progress.scrollTop) {
-                    _epubRestoreScroll = progress.scrollTop;
+                // Build chapter list from TOC
+                var toc = EpubBridge.flattenToc(bookObj.toc);
+                if (toc.length === 0) {
+                    toc = bookObj.sections.map(function (s, i) {
+                        return { title: 'Chapter ' + (i + 1), href: i };
+                    });
                 }
+                currentChapters = { hasChapters: true, chapters: toc };
+                readerBookTitle.textContent = book.title;
+
+                // Configure renderer: paginated, single column
+                if (view.renderer) {
+                    view.renderer.setAttribute('max-inline-size', '720px');
+                    view.renderer.setAttribute('max-column-count', '1');
+                    view.renderer.setAttribute('gap', '5%');
+                    view.renderer.setAttribute('margin', '16px');
+                }
+
+                return ReaderLib.getProgress(book.id).then(function (progress) {
+                    currentChapterIndex = 0;
+
+                    // Show EPUB mode
+                    readerContentWrap.classList.add('epub-active');
+                    showChapterMode();
+
+                    // Apply user styles
+                    applyEpubSettings();
+
+                    // Set up event listeners
+                    view.addEventListener('relocate', function (e) {
+                        var loc = e.detail;
+                        var fraction = loc.fraction || 0;
+                        scrollProgressBar.style.width = (fraction * 100).toFixed(1) + '%';
+
+                        // Update chapter from tocItem
+                        if (loc.tocItem) {
+                            var tocHref = loc.tocItem.href || '';
+                            for (var i = 0; i < currentChapters.chapters.length; i++) {
+                                if (currentChapters.chapters[i].href === tocHref ||
+                                    currentChapters.chapters[i].title === loc.tocItem.label) {
+                                    currentChapterIndex = i;
+                                    updateChapterUI();
+                                    break;
+                                }
+                            }
+                        } else if (loc.section != null) {
+                            // Fallback for books without TOC
+                            var secIdx = typeof loc.section === 'number' ? loc.section : (loc.section.current || 0);
+                            if (secIdx !== currentChapterIndex && secIdx < currentChapters.chapters.length) {
+                                currentChapterIndex = secIdx;
+                                updateChapterUI();
+                            }
+                        }
+                        saveProgressDebounced();
+                    });
+
+                    // external-link: foliate-js opens in new tab by default
+
+                    view.addEventListener('load', function (e) {
+                        var doc = e.detail.doc;
+                        if (!doc) return;
+                        // Tap zones for pagination and immersive toggle
+                        doc.addEventListener('click', function (ev) {
+                            // Don't interfere with text selection
+                            if (doc.defaultView && doc.defaultView.getSelection().toString()) return;
+                            // Don't interfere with link clicks
+                            var a = ev.target.closest ? ev.target.closest('a[href]') : null;
+                            if (a) return;
+                            var rect = doc.documentElement.getBoundingClientRect();
+                            var x = ev.clientX - rect.left;
+                            var w = rect.width;
+                            var zone = x / w;
+                            if (zone < 0.25) {
+                                view.goLeft();
+                            } else if (zone > 0.75) {
+                                view.goRight();
+                            } else {
+                                readerOverlay.classList.toggle('immersive');
+                            }
+                        });
+                    });
+
+                    // Initialize position
+                    if (progress && progress.cfi) {
+                        // Restore from saved CFI (most precise)
+                        return view.init({ lastLocation: progress.cfi });
+                    } else if (progress && progress.scrollPercent > 0) {
+                        // Legacy: approximate from scroll percent
+                        return view.init({ showTextStart: true }).then(function () {
+                            return view.goToFraction(progress.scrollPercent / 100);
+                        });
+                    } else {
+                        return view.init({ showTextStart: true });
+                    }
+                }).then(function () {
+                    readerOverlay.classList.remove('hidden');
+                    applySettings();
+
+                    // Save as last read
+                    localStorage.setItem('lastReadBook', JSON.stringify({
+                        id: book.id, title: book.title, chapterIndex: currentChapterIndex
+                    }));
+                });
             });
         }).catch(function (err) {
             console.error('EPUB open error:', err);
@@ -509,195 +626,20 @@
         });
     }
 
-    var _epubRestoreScroll = 0;
-
-    function renderEpubChapter(index) {
-        if (!currentEpub || !currentChapters || !currentChapters.hasChapters) return;
-        var ch = currentChapters.chapters[index];
-        currentChapterIndex = index;
-        updateChapterUI();
-
-        currentEpub.getChapterContent(ch.href).then(function (html) {
-            // Hide normal reader content, show iframe
-            readerContent.style.display = 'none';
-            readerContentWrap.classList.add('epub-active');
-            var iframe = document.getElementById('epubFrame');
-            if (!iframe) {
-                iframe = document.createElement('iframe');
-                iframe.id = 'epubFrame';
-                iframe.setAttribute('sandbox', 'allow-same-origin');
-                readerContentWrap.appendChild(iframe);
-            }
-            iframe.style.display = 'block';
-
-            iframe.srcdoc = buildEpubSrcdoc(html);
-
-            iframe.onload = function () {
-                try {
-                    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    // Intercept clicks: internal links → navigate chapters; toggle immersive for non-links
-                    iframeDoc.onclick = function (e) {
-                        var link = e.target.closest ? e.target.closest('a[href]') : null;
-                        if (link) {
-                            var href = link.getAttribute('href');
-                            // Skip external links
-                            if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0 || href.indexOf('mailto:') === 0)) return;
-                            e.preventDefault();
-                            if (href) _navigateEpubLink(href);
-                            return;
-                        }
-                        if (iframe.contentWindow.getSelection().toString()) return;
-                        readerOverlay.classList.toggle('immersive');
-                    };
-                    iframe.contentWindow.onscroll = function () {
-                        updateEpubScrollProgress();
-                        saveProgressDebounced();
-                    };
-
-                    // Restore scroll position
-                    if (_epubRestoreScroll > 0) {
-                        iframe.contentWindow.scrollTo(0, _epubRestoreScroll);
-                        _epubRestoreScroll = 0;
-                    }
-                } catch (e) {}
-            };
-
-            saveProgressDebounced();
-
-            // Update lastReadBook
-            try {
-                var last = JSON.parse(localStorage.getItem('lastReadBook'));
-                if (last && last.id === currentBook.id) {
-                    last.chapterIndex = index;
-                    localStorage.setItem('lastReadBook', JSON.stringify(last));
-                }
-            } catch (e) {}
-        }).catch(function (err) {
-            console.error('EPUB chapter render error:', err);
-            readerContent.style.display = '';
-            readerContent.innerHTML = '<p style="color:red">L\u1ED7i t\u1EA3i ch\u01B0\u01A1ng: ' + VP.escapeHtml(err.message) + '</p>';
-        });
-    }
-
-    function buildEpubSrcdoc(chapter) {
-        // chapter = { head, body } from EpubEngine.getChapterContent()
+    function applyEpubSettings() {
+        if (!epubView || !epubView.renderer) return;
         var cs = getComputedStyle(readerOverlay);
         var bg = cs.getPropertyValue('--reader-bg').trim() || '#0a0a12';
         var fg = cs.getPropertyValue('--reader-text').trim() || '#d4d0e0';
-
         var fontFam = settings.fontFamily === 'serif'
             ? "'Noto Serif', 'Georgia', serif"
             : "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif";
-
-        var userCss =
-            'html, body { margin: 0; padding: 0; background: ' + bg + '; color: ' + fg + '; }' +
-            'body { max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; ' +
-            'font-family: ' + fontFam + '; font-size: ' + settings.fontSize + 'px; ' +
-            'line-height: ' + settings.lineHeight + '; word-wrap: break-word; overflow-wrap: break-word; }' +
+        var css = 'html, body { background: ' + bg + '; color: ' + fg + '; }' +
+            'body { font-family: ' + fontFam + '; font-size: ' + settings.fontSize + 'px; ' +
+            'line-height: ' + settings.lineHeight + '; }' +
             'img, svg, video { max-width: 100%; height: auto; }' +
             'a { color: inherit; }';
-
-        return '<!DOCTYPE html><html><head>' +
-            '<meta charset="UTF-8">' +
-            '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-            (chapter.head || '') +
-            '<style id="userStyles">' + userCss + '</style>' +
-            '</head><body>' + (chapter.body || '') + '</body></html>';
-    }
-
-    function _navigateEpubLink(href) {
-        if (!currentEpub || !currentChapters) return;
-        // Resolve relative href against current chapter
-        var currentChHref = currentChapters.chapters[currentChapterIndex].href;
-        var baseParts = currentChHref.split('/');
-        baseParts.pop();
-        var resolvedHref = href;
-        // If it starts with # it's an anchor in the current page — just scroll
-        if (href.charAt(0) === '#') {
-            var iframe = document.getElementById('epubFrame');
-            if (iframe) {
-                try {
-                    var target = iframe.contentDocument.getElementById(href.substring(1)) ||
-                        iframe.contentDocument.querySelector('[name="' + CSS.escape(href.substring(1)) + '"]');
-                    if (target) target.scrollIntoView({ behavior: 'smooth' });
-                } catch (e) {}
-            }
-            return;
-        }
-        // Resolve relative path
-        var hrefParts = href.split('#');
-        var filePart = hrefParts[0];
-        if (filePart && filePart.indexOf('://') === -1 && filePart.charAt(0) !== '/') {
-            var parts = baseParts.slice();
-            var segs = filePart.split('/');
-            for (var i = 0; i < segs.length; i++) {
-                if (segs[i] === '..') parts.pop();
-                else if (segs[i] !== '.' && segs[i] !== '') parts.push(segs[i]);
-            }
-            resolvedHref = parts.join('/');
-        }
-        var cleanResolved = resolvedHref.split('#')[0].split('?')[0];
-        // Find matching chapter
-        var chapters = currentChapters.chapters;
-        for (var ci = 0; ci < chapters.length; ci++) {
-            var chClean = chapters[ci].href.split('#')[0].split('?')[0];
-            if (chClean === cleanResolved) {
-                renderEpubChapter(ci);
-                return;
-            }
-        }
-        // Not in chapter list — try spine
-        if (currentEpub.spine) {
-            for (var si = 0; si < currentEpub.spine.length; si++) {
-                var spClean = currentEpub.spine[si].href.split('#')[0].split('?')[0];
-                if (spClean === cleanResolved) {
-                    // Find or create chapter entry for this spine item
-                    renderEpubChapter(Math.min(si, chapters.length - 1));
-                    return;
-                }
-            }
-        }
-    }
-
-    function updateEpubScrollProgress() {
-        var iframe = document.getElementById('epubFrame');
-        if (!iframe || !iframe.contentWindow) return;
-        try {
-            var win = iframe.contentWindow;
-            var doc = win.document;
-            var scrollEl = doc.scrollingElement || doc.documentElement;
-            var scrollTop = win.scrollY || scrollEl.scrollTop || 0;
-            var scrollHeight = scrollEl.scrollHeight - win.innerHeight;
-            var chapterFraction = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
-            var total = currentChapters ? currentChapters.chapters.length : 1;
-            var percent = ((currentChapterIndex + chapterFraction) / total) * 100;
-            scrollProgressBar.style.width = percent.toFixed(1) + '%';
-        } catch (e) {}
-    }
-
-    function applyEpubSettings() {
-        var iframe = document.getElementById('epubFrame');
-        if (!iframe) return;
-        try {
-            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            var styleEl = iframeDoc.getElementById('userStyles');
-            if (!styleEl) return;
-
-            var cs = getComputedStyle(readerOverlay);
-            var bg = cs.getPropertyValue('--reader-bg').trim() || '#0a0a12';
-            var fg = cs.getPropertyValue('--reader-text').trim() || '#d4d0e0';
-            var fontFam = settings.fontFamily === 'serif'
-                ? "'Noto Serif', 'Georgia', serif"
-                : "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif";
-
-            styleEl.textContent =
-                'html, body { margin: 0; padding: 0; background: ' + bg + '; color: ' + fg + '; }' +
-                'body { max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; ' +
-                'font-family: ' + fontFam + '; font-size: ' + settings.fontSize + 'px; ' +
-                'line-height: ' + settings.lineHeight + '; word-wrap: break-word; overflow-wrap: break-word; }' +
-                'img, svg, video { max-width: 100%; height: auto; }' +
-                'a { color: inherit; }';
-        } catch (e) {}
+        epubView.renderer.setStyles(css);
     }
 
     function updateChapterUI() {
@@ -730,14 +672,22 @@
     // Chapter nav
     btnPrevCh.addEventListener('click', function () {
         if (currentChapterIndex > 0) {
-            if (currentEpub) renderEpubChapter(currentChapterIndex - 1);
-            else renderChapter(currentChapterIndex - 1);
+            if (epubView) {
+                var ch = currentChapters.chapters[currentChapterIndex - 1];
+                epubView.goTo(ch.href);
+            } else {
+                renderChapter(currentChapterIndex - 1);
+            }
         }
     });
     btnNextCh.addEventListener('click', function () {
         if (currentChapters && currentChapterIndex < currentChapters.chapters.length - 1) {
-            if (currentEpub) renderEpubChapter(currentChapterIndex + 1);
-            else renderChapter(currentChapterIndex + 1);
+            if (epubView) {
+                var ch = currentChapters.chapters[currentChapterIndex + 1];
+                epubView.goTo(ch.href);
+            } else {
+                renderChapter(currentChapterIndex + 1);
+            }
         }
     });
 
@@ -760,23 +710,23 @@
         var item = e.target.closest('.chapter-item');
         if (!item) return;
         var idx = parseInt(item.dataset.index, 10);
-        if (currentEpub) renderEpubChapter(idx);
-        else renderChapter(idx);
+        if (epubView) {
+            var ch = currentChapters.chapters[idx];
+            epubView.goTo(ch.href);
+        } else {
+            renderChapter(idx);
+        }
         toggleSidebar(false);
     });
 
     // Back to library
     btnBackToLib.addEventListener('click', function () {
         saveCurrentProgress();
-        // Cleanup EPUB resources
-        if (currentEpub) {
-            currentEpub.revokeAll();
-            currentEpub = null;
-        }
-        var iframe = document.getElementById('epubFrame');
-        if (iframe) {
-            iframe.srcdoc = '';
-            iframe.style.display = 'none';
+        // Cleanup EPUB foliate-view
+        if (epubView) {
+            epubView.close();
+            epubView.remove();
+            epubView = null;
         }
         readerContent.style.display = '';
         readerContentWrap.classList.remove('epub-active');
@@ -855,29 +805,18 @@
         if (!currentBook) return;
         var data;
 
-        if (currentEpub) {
-            // EPUB: read scroll from iframe
-            var scrollTop = 0;
-            var percent = 0;
-            var iframe = document.getElementById('epubFrame');
-            if (iframe) {
-                try {
-                    var win = iframe.contentWindow;
-                    var doc = win.document;
-                    var scrollEl = doc.scrollingElement || doc.documentElement;
-                    scrollTop = win.scrollY || scrollEl.scrollTop || 0;
-                    var scrollHeight = scrollEl.scrollHeight - win.innerHeight;
-                    var chapterFraction = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
-                    var total = currentChapters ? currentChapters.chapters.length : 1;
-                    percent = ((currentChapterIndex + chapterFraction) / total) * 100;
-                } catch (e) {}
-            }
+        if (epubView) {
+            // EPUB: save CFI + fraction from foliate-view
+            var loc = epubView.lastLocation;
+            if (!loc || (!loc.cfi && !loc.fraction)) return; // skip if no relocate yet
+            var fraction = loc.fraction || 0;
             data = {
                 bookId: currentBook.id,
-                mode: 'chapter',
+                mode: 'epub',
+                cfi: loc.cfi || null,
+                fraction: fraction,
                 chapterIndex: currentChapterIndex,
-                scrollTop: scrollTop,
-                scrollPercent: percent,
+                scrollPercent: fraction * 100,
                 lastRead: Date.now()
             };
         } else {
@@ -913,6 +852,11 @@
     // Keyboard shortcuts in reader
     document.addEventListener('keydown', function (e) {
         if (readerOverlay.classList.contains('hidden')) return;
+        if (epubView && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            if (e.key === 'ArrowLeft') epubView.goLeft();
+            else epubView.goRight();
+            return;
+        }
         if (e.key === 'ArrowLeft' && currentMode === 'chapter') {
             btnPrevCh.click();
         } else if (e.key === 'ArrowRight' && currentMode === 'chapter') {
