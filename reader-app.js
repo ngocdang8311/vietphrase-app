@@ -891,6 +891,12 @@
     function init() {
         renderLibrary();
         migrateOldBooks();
+        // Request persistent storage to reduce iOS eviction risk
+        if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist().then(function (granted) {
+                if (granted) console.log('[Reader] Persistent storage granted');
+            }).catch(function () {});
+        }
         var params = new URLSearchParams(window.location.search);
         var bookId = params.get('book');
         if (bookId) {
