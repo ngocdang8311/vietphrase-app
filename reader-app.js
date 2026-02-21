@@ -503,7 +503,7 @@
         if (epubView) { epubView.close(); epubView.remove(); epubView = null; }
 
         waitForBridge().then(function () {
-            var blob = new Blob([content], { type: 'application/epub+zip' });
+            var file = new File([content], 'book.epub', { type: 'application/epub+zip' });
             var view = EpubBridge.createView();
             epubView = view;
             currentBook = book;
@@ -513,7 +513,7 @@
             // Append to DOM before opening
             readerContentWrap.appendChild(view);
 
-            return view.open(blob).then(function () {
+            return view.open(file).then(function () {
                 var bookObj = view.book;
 
                 // Build chapter list from TOC

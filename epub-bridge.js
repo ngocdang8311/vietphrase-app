@@ -47,8 +47,8 @@ window.EpubBridge = {
 
     // Extract metadata without rendering (for import)
     async parseMetadata(arrayBuffer) {
-        var blob = new Blob([arrayBuffer], { type: 'application/epub+zip' });
-        var book = await makeBook(blob);
+        var file = new File([arrayBuffer], 'book.epub', { type: 'application/epub+zip' });
+        var book = await makeBook(file);
         var metadata = extractMeta(book);
         var toc = flattenToc(book.toc);
         var sectionCount = book.sections ? book.sections.length : 0;
