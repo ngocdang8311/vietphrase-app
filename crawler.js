@@ -1366,7 +1366,11 @@
         var html = '';
 
         if (parsed.title) {
-            html += '<div class="crawler-chapter-title">' + VP.escapeHtml(parsed.title) + '</div>';
+            var chTitle = parsed.title;
+            if (typeof DictEngine !== 'undefined' && DictEngine.isReady) {
+                chTitle = DictEngine.translate(parsed.title);
+            }
+            html += '<div class="crawler-chapter-title" data-zh="' + VP.escapeHtml(parsed.title) + '">' + VP.escapeHtml(chTitle) + '</div>';
         }
 
         for (var i = 0; i < viLines.length; i++) {
