@@ -165,9 +165,9 @@
                 reverseChapters: false
             },
             chapter: {
-                content: '.content',
-                title: 'h1, .booktitle',
-                remove: ['script', '.ads', '.aadd', '.aminus', '.pattern'],
+                content: '.readcotent',
+                title: 'h1.pt10, h1',
+                remove: ['script', '.ads', '.aadd', '.aminus', '.pattern', '.toolbar'],
                 nextLink: 'a:contains("\u4E0B\u4E00\u7AE0"), a:contains("\u4E0B\u4E00\u9801")',
                 prevLink: 'a:contains("\u4E0A\u4E00\u7AE0"), a:contains("\u4E0A\u4E00\u9801")'
             }
@@ -273,25 +273,7 @@
             return result;
         }
 
-        // Try chapter page first
-        var contentEl = safeQuery(doc, siteConfig.chapter.content);
-        if (contentEl) {
-            result.isChapterPage = true;
-            var titleEl = safeQuery(doc, siteConfig.chapter.title);
-            result.title = titleEl ? titleEl.textContent.trim() : doc.title || '';
-            if (siteConfig.chapter.remove) {
-                siteConfig.chapter.remove.forEach(function (sel) {
-                    var remEls = contentEl.querySelectorAll(sel);
-                    for (var i = 0; i < remEls.length; i++) remEls[i].remove();
-                });
-            }
-            result.content = extractTextContent(contentEl);
-            result.prevUrl = findNavLink(doc, siteConfig.chapter.prevLink, pageUrl);
-            result.nextUrl = findNavLink(doc, siteConfig.chapter.nextLink, pageUrl);
-            return result;
-        }
-
-        // Try index page
+        // Try index page FIRST (chapter list is a strong signal)
         var chapterEls = safeQueryAll(doc, siteConfig.novel.chapterList);
         if (chapterEls.length > 0) {
             result.isIndexPage = true;
@@ -312,6 +294,24 @@
             if (siteConfig.novel.reverseChapters) {
                 result.chapterLinks.reverse();
             }
+            return result;
+        }
+
+        // Then try chapter page
+        var contentEl = safeQuery(doc, siteConfig.chapter.content);
+        if (contentEl) {
+            result.isChapterPage = true;
+            var titleEl = safeQuery(doc, siteConfig.chapter.title);
+            result.title = titleEl ? titleEl.textContent.trim() : doc.title || '';
+            if (siteConfig.chapter.remove) {
+                siteConfig.chapter.remove.forEach(function (sel) {
+                    var remEls = contentEl.querySelectorAll(sel);
+                    for (var i = 0; i < remEls.length; i++) remEls[i].remove();
+                });
+            }
+            result.content = extractTextContent(contentEl);
+            result.prevUrl = findNavLink(doc, siteConfig.chapter.prevLink, pageUrl);
+            result.nextUrl = findNavLink(doc, siteConfig.chapter.nextLink, pageUrl);
             return result;
         }
 
