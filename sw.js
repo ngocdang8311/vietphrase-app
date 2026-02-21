@@ -1,19 +1,21 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v17';
+const CACHE_NAME = 'cnvn-dict-v18';
 const APP_ASSETS = [
-    './',
-    './index.html',
-    './reader.html',
-    './utils.js',
-    './app.js',
-    './dict-engine.js',
-    './dict-default.json',
-    './reader-lib.js',
-    './reader-app.js',
-    './backup.js',
-    './sync-common.js',
-    './cloud-sync.js',
-    './github-sync.js'
+    '/',
+    '/index.html',
+    '/reader.html',
+    '/privacy.html',
+    '/manifest.json',
+    '/utils.js',
+    '/app.js',
+    '/dict-engine.js',
+    '/dict-default.json',
+    '/reader-lib.js',
+    '/reader-app.js',
+    '/backup.js',
+    '/sync-common.js',
+    '/cloud-sync.js',
+    '/github-sync.js'
 ];
 
 self.addEventListener('install', function (event) {
@@ -39,26 +41,45 @@ self.addEventListener('activate', function (event) {
     );
 });
 
-// Cache-first, network fallback
+// Navigation: network-first.
+// Static assets: cache-first.
 self.addEventListener('fetch', function (event) {
     var request = event.request;
-
-    // Only handle GET requests
     if (request.method !== 'GET') return;
 
-    // Skip cross-origin requests (CDN fonts, external APIs, etc.)
-    if (!request.url.startsWith(self.location.origin)) return;
+    var url = new URL(request.url);
+    if (url.origin !== self.location.origin) return;
 
-    // Skip API calls (proxy endpoints) — must not be cached
-    if (request.url.startsWith(self.location.origin + '/api/')) return;
+    // Never intercept/cache API proxy requests.
+    if (url.pathname.indexOf('/api/') === 0) return;
+
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request).then(function (response) {
+                if (response && response.ok) {
+                    var clone = response.clone();
+                    caches.open(CACHE_NAME).then(function (cache) {
+                        cache.put(request, clone);
+                    });
+                }
+                return response;
+            }).catch(function () {
+                return caches.match(url.pathname).then(function (cachedByPath) {
+                    if (cachedByPath) return cachedByPath;
+                    return caches.match('/index.html').then(function (cachedIndex) {
+                        return cachedIndex || new Response('Offline', { status: 503, statusText: 'Offline' });
+                    });
+                });
+            })
+        );
+        return;
+    }
 
     event.respondWith(
-        caches.match(request, { ignoreSearch: true }).then(function (cached) {
+        caches.match(request).then(function (cached) {
             if (cached) return cached;
             return fetch(request).then(function (response) {
-                // Only cache successful, non-redirected responses
-                // Safari rejects redirected responses from SW for navigation requests
-                if (response.ok && !response.redirected) {
+                if (response && response.ok) {
                     var clone = response.clone();
                     caches.open(CACHE_NAME).then(function (cache) {
                         cache.put(request, clone);
@@ -67,11 +88,6 @@ self.addEventListener('fetch', function (event) {
                 return response;
             });
         }).catch(function () {
-            // Offline fallback: return cached index.html for navigation
-            if (request.mode === 'navigate') {
-                return caches.match('./index.html');
-            }
-            // For other requests, return empty response to avoid ERR_FAILED
             return new Response('', { status: 503, statusText: 'Offline' });
         })
     );
