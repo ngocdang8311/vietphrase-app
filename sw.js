@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v22';
+const CACHE_NAME = 'cnvn-dict-v23';
 const APP_ASSETS = [
     '/',
     '/index.html',

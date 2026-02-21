@@ -1220,9 +1220,9 @@
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:420px;width:100%">
             <div style="font-size:16px;font-weight:700;margin-bottom:16px">Backup / Restore</div>
             <div style="display:flex;flex-direction:column;gap:10px">
-                <button class="btn-import" id="btnExportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">Export Backup (.json)</button>
-                <button class="btn-import" id="btnImportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);width:100%;text-align:center">Import Backup (.json)</button>
-                <input type="file" id="backupFileInput" accept=".json" style="display:none">
+                <button class="btn-import" id="btnExportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">Export Backup (.zip)</button>
+                <button class="btn-import" id="btnImportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);width:100%;text-align:center">Import Backup (.zip/.json)</button>
+                <input type="file" id="backupFileInput" accept=".zip,.json" style="display:none">
                 <div id="backupStatus" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></div>
                 <button id="btnCloseBackup" style="padding:10px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);color:var(--text-secondary);width:100%;text-align:center;border:1px solid var(--border)">&#272;&#243;ng</button>
             </div>
