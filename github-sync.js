@@ -3,7 +3,9 @@
     var CLIENT_ID = 'Ov23li7UFjZu0LQmc1Xu';
     var DEVICE_CODE_URL = '/api/github/device-code';
     var ACCESS_TOKEN_URL = '/api/github/access-token';
-    var GIST_API = 'https://api.github.com/gists';
+    var GIST_API_PATH = '/gists';
+    var GITHUB_API_PROXY_URL = '/api/github/proxy';
+    var GITHUB_RAW_PROXY_URL = '/api/github/raw';
     var META_FILENAME = 'sync-meta.json';
     var TOKEN_KEY = 'vp_github_token';
     var GIST_ID_KEY = 'vp_github_gist_id';
@@ -17,6 +19,10 @@
     var syncInProgress = false;
     var cloudOnlyBooks = [];
     var _pollAbort = null; // AbortController for polling
+
+    function _gistApiUrl(path) {
+        return GITHUB_API_PROXY_URL + '?path=' + encodeURIComponent(path);
+    }
 
     // --- Token ---
 
@@ -56,8 +62,7 @@
             var token = (accessToken || '').trim();
             if (!token) return Promise.reject(new Error('TOKEN_EXPIRED'));
             var headers = opts.headers ? Object.assign({}, opts.headers) : {};
-            // Only send auth header to api.github.com (not raw CDN)
-            if (url.indexOf('https://api.github.com') === 0) {
+            if (url.indexOf(GITHUB_API_PROXY_URL) === 0 || url.indexOf('https://api.github.com') === 0) {
                 headers['Authorization'] = 'Bearer ' + token;
                 headers['Accept'] = 'application/vnd.github+json';
             }
@@ -209,7 +214,7 @@
     function _findOrCreateGist() {
         // Use cached gist ID if available
         if (gistId) {
-            return _ghFetch(GIST_API + '/' + gistId).then(function (resp) {
+            return _ghFetch(_gistApiUrl(GIST_API_PATH + '/' + gistId)).then(function (resp) {
                 return resp.json();
             }).then(function (gist) {
                 return gist;
@@ -222,7 +227,7 @@
         }
 
         // Search user's gists for our sync gist
-        return _ghFetch(GIST_API + '?per_page=100').then(function (resp) {
+        return _ghFetch(_gistApiUrl(GIST_API_PATH + '?per_page=100')).then(function (resp) {
             return resp.json();
         }).then(function (gists) {
             for (var i = 0; i < gists.length; i++) {
@@ -232,7 +237,7 @@
                 }
             }
             // Not found — create new
-            return _ghFetch(GIST_API, {
+            return _ghFetch(_gistApiUrl(GIST_API_PATH), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -253,9 +258,10 @@
     function _readGistFile(gist, filename) {
         var file = gist.files[filename];
         if (!file) return Promise.resolve(null);
-        // If truncated, fetch raw_url (no auth — CDN URL is pre-signed)
+        // If truncated, fetch via same-origin proxy to avoid CORS blocks.
         if (file.truncated && file.raw_url) {
-            return fetch(file.raw_url).then(function (resp) {
+            var rawUrl = GITHUB_RAW_PROXY_URL + '?url=' + encodeURIComponent(file.raw_url);
+            return fetch(rawUrl).then(function (resp) {
                 if (!resp.ok) throw new Error('HTTP ' + resp.status + ' fetching ' + filename);
                 return resp.text();
             });
@@ -283,7 +289,7 @@
             }
         }
 
-        return _ghFetch(GIST_API + '/' + gistId, {
+        return _ghFetch(_gistApiUrl(GIST_API_PATH + '/' + gistId), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ files: files })
