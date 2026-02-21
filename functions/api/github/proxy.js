@@ -24,7 +24,8 @@ export async function onRequest(context) {
 
     var targetUrl = 'https://api.github.com' + path;
     var headers = {
-        'Accept': context.request.headers.get('Accept') || 'application/vnd.github+json'
+        'Accept': context.request.headers.get('Accept') || 'application/vnd.github+json',
+        'User-Agent': 'vietphrase-sync'
     };
     var authHeader = context.request.headers.get('Authorization');
     if (authHeader) headers['Authorization'] = authHeader;

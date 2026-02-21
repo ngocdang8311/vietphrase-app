@@ -75,11 +75,15 @@
                     throw new Error('TOKEN_EXPIRED');
                 }
                 if ((resp.status === 403 || resp.status === 429 || resp.status >= 500) && retryCount < MAX_RETRIES) {
+                    console.warn('[GitHubSync] HTTP ' + resp.status + ' (retry ' + retryCount + '):', url);
                     return new Promise(function (resolve) {
                         setTimeout(resolve, RETRY_DELAYS[retryCount] || 4000);
                     }).then(function () { return attempt(retryCount + 1); });
                 }
-                throw new Error('HTTP ' + resp.status);
+                return resp.text().then(function (body) {
+                    console.error('[GitHubSync] HTTP ' + resp.status + ':', url, body.substring(0, 500));
+                    throw new Error('HTTP ' + resp.status);
+                });
             }).catch(function (err) {
                 if (err.message === 'TOKEN_EXPIRED') throw err;
                 if (err.name === 'TypeError' && retryCount < MAX_RETRIES) {
