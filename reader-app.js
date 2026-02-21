@@ -668,7 +668,9 @@
             var scrollEl = doc.scrollingElement || doc.documentElement;
             var scrollTop = win.scrollY || scrollEl.scrollTop || 0;
             var scrollHeight = scrollEl.scrollHeight - win.innerHeight;
-            var percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            var chapterFraction = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+            var total = currentChapters ? currentChapters.chapters.length : 1;
+            var percent = ((currentChapterIndex + chapterFraction) / total) * 100;
             scrollProgressBar.style.width = percent.toFixed(1) + '%';
         } catch (e) {}
     }
@@ -865,7 +867,9 @@
                     var scrollEl = doc.scrollingElement || doc.documentElement;
                     scrollTop = win.scrollY || scrollEl.scrollTop || 0;
                     var scrollHeight = scrollEl.scrollHeight - win.innerHeight;
-                    percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                    var chapterFraction = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+                    var total = currentChapters ? currentChapters.chapters.length : 1;
+                    percent = ((currentChapterIndex + chapterFraction) / total) * 100;
                 } catch (e) {}
             }
             data = {
