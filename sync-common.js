@@ -72,6 +72,7 @@
 
             for (var i = 0; i < books.length; i++) {
                 var b = books[i];
+                if (b.cloudOnly) continue; // skip cloud stubs
                 result.bookList.push({
                     id: b.id,
                     title: b.title,
@@ -177,6 +178,7 @@
 
         var booksToUpload = [];
         var booksCloudOnly = [];
+        var dedupProgressMap = {}; // cloudBookId -> localBookId (for deduped books)
 
         var allBookIds = {};
         for (var mk in localBookMap) { if (localBookMap.hasOwnProperty(mk)) allBookIds[mk] = true; }
@@ -195,21 +197,28 @@
                 merged.bookList.push(entry);
             } else if (inLocal && !inCloud) {
                 var dedupKey = inLocal.title + '|' + inLocal.size;
-                var matched = false;
+                var matchedCloudBook = null;
                 for (var cid in cloudBookMap) {
                     if (cloudBookMap.hasOwnProperty(cid)) {
                         var ck2 = cloudBookMap[cid].title + '|' + cloudBookMap[cid].size;
-                        if (ck2 === dedupKey) { matched = true; break; }
+                        if (ck2 === dedupKey) { matchedCloudBook = cloudBookMap[cid]; break; }
                     }
                 }
-                if (!matched) {
+                if (matchedCloudBook) {
+                    // Same book imported on both devices (different IDs) — keep local ID, adopt cloud refs
+                    if (matchedCloudBook.cloudRef) inLocal.cloudRef = matchedCloudBook.cloudRef;
+                    if (matchedCloudBook.driveFileId) inLocal.driveFileId = matchedCloudBook.driveFileId;
+                } else {
                     booksToUpload.push(inLocal);
                 }
                 merged.bookList.push(inLocal);
             } else if (!inLocal && inCloud) {
                 var cDedupKey = inCloud.title + '|' + inCloud.size;
-                if (localDedupKey[cDedupKey]) {
-                    merged.bookList.push(inCloud);
+                var matchedLocalId = localDedupKey[cDedupKey];
+                if (matchedLocalId) {
+                    // Duplicate — skip cloud version (local version already in merged.bookList)
+                    // Remap cloud progress to local book ID
+                    dedupProgressMap[inCloud.id] = matchedLocalId;
                 } else {
                     booksCloudOnly.push(inCloud);
                     merged.bookList.push(inCloud);
@@ -218,21 +227,39 @@
         }
 
         // 5. Progress: per book, newer lastRead wins
+        // Remap cloud progress for deduped books (cloud ID -> local ID)
         var localProgress = local.progress || {};
         var cloudProgress = (cloud && cloud.progress) || {};
+        var remappedCloudProgress = {};
+        for (var cpk in cloudProgress) {
+            if (cloudProgress.hasOwnProperty(cpk)) {
+                var targetKey = dedupProgressMap[cpk] || cpk;
+                var cp = cloudProgress[cpk];
+                // Update bookId to match canonical ID
+                if (targetKey !== cpk) {
+                    cp = {};
+                    for (var cpf in cloudProgress[cpk]) {
+                        if (cloudProgress[cpk].hasOwnProperty(cpf)) cp[cpf] = cloudProgress[cpk][cpf];
+                    }
+                    cp.bookId = targetKey;
+                }
+                remappedCloudProgress[targetKey] = cp;
+            }
+        }
+
         var allProgressKeys = {};
         for (var pk in localProgress) { if (localProgress.hasOwnProperty(pk)) allProgressKeys[pk] = true; }
-        for (var cpk in cloudProgress) { if (cloudProgress.hasOwnProperty(cpk)) allProgressKeys[cpk] = true; }
+        for (var rpk in remappedCloudProgress) { if (remappedCloudProgress.hasOwnProperty(rpk)) allProgressKeys[rpk] = true; }
 
         for (var pKey in allProgressKeys) {
             if (!allProgressKeys.hasOwnProperty(pKey)) continue;
             if (deletedIds[pKey]) continue;
             var lp = localProgress[pKey];
-            var cp = cloudProgress[pKey];
-            if (lp && cp) {
-                merged.progress[pKey] = (cp.lastRead || 0) > (lp.lastRead || 0) ? cp : lp;
+            var rcp = remappedCloudProgress[pKey];
+            if (lp && rcp) {
+                merged.progress[pKey] = (rcp.lastRead || 0) > (lp.lastRead || 0) ? rcp : lp;
             } else {
-                merged.progress[pKey] = lp || cp;
+                merged.progress[pKey] = lp || rcp;
             }
         }
 
@@ -245,7 +272,7 @@
 
     // --- Apply Merged Data to Local ---
 
-    function applyMergedToLocal(merged) {
+    function applyMergedToLocal(merged, booksCloudOnly) {
         // Settings
         if (merged.settings) {
             if (merged.settings.theme) localStorage.setItem('theme', merged.settings.theme);
@@ -283,7 +310,48 @@
 
         setDeletedBooks(merged.deletedBooks || []);
 
-        return Promise.all(progressPromises.concat(deletePromises));
+        // Save cloud-only book stubs to IDB + cleanup stale stubs
+        var cloudStubPromises = [];
+        if (booksCloudOnly && booksCloudOnly.length > 0) {
+            var cloudOnlyIds = {};
+            for (var ci = 0; ci < booksCloudOnly.length; ci++) {
+                var cb = booksCloudOnly[ci];
+                cloudOnlyIds[cb.id] = true;
+                var stub = {
+                    id: cb.id,
+                    title: cb.title,
+                    size: cb.size,
+                    dateAdded: cb.dateAdded,
+                    format: cb.format || 'txt',
+                    chapters: cb.chapters || null,
+                    cloudOnly: true
+                };
+                if (cb.cloudRef) stub.cloudRef = cb.cloudRef;
+                if (cb.driveFileId) stub.driveFileId = cb.driveFileId;
+                cloudStubPromises.push(ReaderLib.saveBookMeta(stub));
+            }
+        }
+
+        // Cleanup stale cloud stubs: remove IDB entries with cloudOnly=true that are no longer in merged.bookList
+        var cleanupPromise = ReaderLib.getAllBooksMeta().then(function (allBooks) {
+            var mergedIds = {};
+            if (merged.bookList) {
+                for (var mi = 0; mi < merged.bookList.length; mi++) {
+                    mergedIds[merged.bookList[mi].id] = true;
+                }
+            }
+            var staleDeletes = [];
+            for (var si = 0; si < allBooks.length; si++) {
+                if (allBooks[si].cloudOnly && !mergedIds[allBooks[si].id]) {
+                    staleDeletes.push(ReaderLib.deleteBook(allBooks[si].id).catch(function () {}));
+                }
+            }
+            return Promise.all(staleDeletes);
+        });
+
+        return Promise.all(progressPromises.concat(deletePromises).concat(cloudStubPromises)).then(function () {
+            return cleanupPromise;
+        });
     }
 
     window.SyncCommon = {

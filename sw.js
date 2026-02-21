@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v13';
+const CACHE_NAME = 'cnvn-dict-v14';
 const APP_ASSETS = [
     './',
     './index.html',
@@ -48,6 +48,9 @@ self.addEventListener('fetch', function (event) {
 
     // Skip cross-origin requests (CDN fonts, external APIs, etc.)
     if (!request.url.startsWith(self.location.origin)) return;
+
+    // Skip API calls (proxy endpoints) — must not be cached
+    if (request.url.startsWith(self.location.origin + '/api/')) return;
 
     event.respondWith(
         caches.match(request, { ignoreSearch: true }).then(function (cached) {

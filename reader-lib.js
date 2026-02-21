@@ -213,19 +213,35 @@
                     var result = [];
                     for (var i = 0; i < books.length; i++) {
                         var b = books[i];
-                        result.push({
+                        var entry = {
                             id: b.id,
                             title: b.title,
                             size: b.size,
                             dateAdded: b.dateAdded,
                             format: b.format,
                             chapters: b.chapters || null
-                        });
+                        };
+                        if (b.cloudOnly) entry.cloudOnly = true;
+                        if (b.cloudRef) entry.cloudRef = b.cloudRef;
+                        if (b.driveFileId) entry.driveFileId = b.driveFileId;
+                        result.push(entry);
                     }
                     result.reverse();
                     resolve(result);
                 };
                 req.onerror = function () { db.close(); resolve([]); };
+            });
+        });
+    }
+
+    // Get single book metadata by ID (no content)
+    function getBookMeta(id) {
+        return openDB().then(function (db) {
+            return new Promise(function (resolve, reject) {
+                var tx = db.transaction('books', 'readonly');
+                var req = tx.objectStore('books').get(id);
+                req.onsuccess = function () { db.close(); resolve(req.result || null); };
+                req.onerror = function () { db.close(); resolve(null); };
             });
         });
     }
@@ -263,7 +279,7 @@
     }
 
     function saveProgress(data) {
-        data.lastRead = Date.now();
+        if (!data.lastRead) data.lastRead = Date.now();
         return openDB().then(function (db) {
             return new Promise(function (resolve, reject) {
                 var tx = db.transaction('progress', 'readwrite');
@@ -480,6 +496,7 @@
     window.ReaderLib = {
         importBook: importBook,
         getBook: getBook,
+        getBookMeta: getBookMeta,
         getBookContent: getBookContent,
         getAllBooks: getAllBooks,
         getAllBooksMeta: getAllBooksMeta,

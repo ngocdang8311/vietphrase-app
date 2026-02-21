@@ -14,6 +14,7 @@
         document.documentElement.setAttribute('data-theme', next);
         btnTheme.textContent = next === 'light' ? '\u2600\uFE0F' : '\uD83C\uDF19';
         localStorage.setItem('theme', next);
+        localStorage.setItem('vp_settings_ts', String(Date.now()));
     });
 
     // --- Elements ---
@@ -106,6 +107,7 @@
 
     function saveSettings() {
         localStorage.setItem('readerSettings', JSON.stringify(settings));
+        localStorage.setItem('vp_settings_ts', String(Date.now()));
     }
 
     function applySettings() {
@@ -153,47 +155,44 @@
                 for (var i = 0; i < books.length; i++) {
                     var b = books[i];
                     var p = progresses[i];
-                    var dateStr = new Date(b.dateAdded).toLocaleDateString();
-                    var info = b.chapters || { hasChapters: false, chapters: [] };
-                    var progressText = '';
-                    if (p) {
-                        if (p.mode === 'chapter' && info.hasChapters) {
-                            progressText = 'Ch\u01B0\u01A1ng ' + (p.chapterIndex + 1) + '/' + info.chapters.length;
-                        } else if (p.scrollPercent != null) {
-                            progressText = Math.round(p.scrollPercent) + '% \u0111\u00E3 \u0111\u1ECDc';
-                        }
-                    }
-                    if (!progressText) progressText = 'Ch\u01B0a \u0111\u1ECDc';
+                    var dateStr = b.dateAdded ? new Date(b.dateAdded).toLocaleDateString() : '';
 
-                    html += '<div class="book-card" data-id="' + b.id + '">' +
-                        '<div class="book-icon">&#x1F4D6;</div>' +
-                        '<div class="book-info">' +
-                        '<div class="book-title">' + VP.escapeHtml(b.title) + '</div>' +
-                        '<div class="book-meta">' + VP.formatSize(b.size) + ' &middot; ' + dateStr +
-                        (info.hasChapters ? ' &middot; ' + info.chapters.length + ' ch\u01B0\u01A1ng' : '') + '</div>' +
-                        '<div class="book-progress">' + progressText + '</div>' +
-                        '</div>' +
-                        '<div class="book-actions">' +
-                        '<button class="btn btn-accent btn-read" data-id="' + b.id + '">\u0110\u1ECDc</button>' +
-                        '<button class="btn btn-red btn-delete" data-id="' + b.id + '">X\u00F3a</button>' +
-                        '</div></div>';
-                }
-
-                // Append cloud-only books
-                if (window.CloudSync) {
-                    var cloudBooks = CloudSync.getCloudOnlyBooks();
-                    for (var ci = 0; ci < cloudBooks.length; ci++) {
-                        var cb = cloudBooks[ci];
-                        var cbDate = cb.dateAdded ? new Date(cb.dateAdded).toLocaleDateString() : '';
-                        html += '<div class="book-card cloud-only" data-id="' + cb.id + '">' +
+                    if (b.cloudOnly) {
+                        // Cloud-only stub: show cloud icon + download button only
+                        html += '<div class="book-card cloud-only" data-id="' + b.id + '">' +
                             '<div class="book-icon">&#x2601;</div>' +
                             '<div class="book-info">' +
-                            '<div class="book-title">' + VP.escapeHtml(cb.title) + '</div>' +
-                            '<div class="book-meta">' + VP.formatSize(cb.size) + (cbDate ? ' &middot; ' + cbDate : '') + '</div>' +
-                            '<div class="cloud-badge">Cloud</div>' +
+                            '<div class="book-title">' + VP.escapeHtml(b.title) + '</div>' +
+                            '<div class="book-meta">' + VP.formatSize(b.size) + (dateStr ? ' &middot; ' + dateStr : '') + '</div>' +
+                            '<div class="cloud-badge">Ch\u01B0a t\u1EA3i</div>' +
                             '</div>' +
                             '<div class="book-actions">' +
-                            '<button class="btn btn-accent btn-cloud-download" data-cloud-index="' + ci + '">T\u1EA3i v\u1EC1</button>' +
+                            '<button class="btn btn-accent btn-cloud-download" data-id="' + b.id + '">T\u1EA3i v\u1EC1</button>' +
+                            '</div></div>';
+                    } else {
+                        // Local book: normal rendering
+                        var info = b.chapters || { hasChapters: false, chapters: [] };
+                        var progressText = '';
+                        if (p) {
+                            if (p.mode === 'chapter' && info.hasChapters) {
+                                progressText = 'Ch\u01B0\u01A1ng ' + (p.chapterIndex + 1) + '/' + info.chapters.length;
+                            } else if (p.scrollPercent != null) {
+                                progressText = Math.round(p.scrollPercent) + '% \u0111\u00E3 \u0111\u1ECDc';
+                            }
+                        }
+                        if (!progressText) progressText = 'Ch\u01B0a \u0111\u1ECDc';
+
+                        html += '<div class="book-card" data-id="' + b.id + '">' +
+                            '<div class="book-icon">&#x1F4D6;</div>' +
+                            '<div class="book-info">' +
+                            '<div class="book-title">' + VP.escapeHtml(b.title) + '</div>' +
+                            '<div class="book-meta">' + VP.formatSize(b.size) + ' &middot; ' + dateStr +
+                            (info.hasChapters ? ' &middot; ' + info.chapters.length + ' ch\u01B0\u01A1ng' : '') + '</div>' +
+                            '<div class="book-progress">' + progressText + '</div>' +
+                            '</div>' +
+                            '<div class="book-actions">' +
+                            '<button class="btn btn-accent btn-read" data-id="' + b.id + '">\u0110\u1ECDc</button>' +
+                            '<button class="btn btn-red btn-delete" data-id="' + b.id + '">X\u00F3a</button>' +
                             '</div></div>';
                     }
                 }
@@ -211,19 +210,19 @@
         // Cloud download button
         var cloudDlBtn = e.target.closest('.btn-cloud-download');
         if (cloudDlBtn && window.CloudSync) {
-            var cIdx = parseInt(cloudDlBtn.dataset.cloudIndex, 10);
-            var cBooks = CloudSync.getCloudOnlyBooks();
-            if (cIdx >= 0 && cIdx < cBooks.length) {
-                cloudDlBtn.disabled = true;
-                cloudDlBtn.textContent = 'Downloading...';
-                CloudSync.downloadBook(cBooks[cIdx]).then(function () {
-                    renderLibrary();
-                }).catch(function (err) {
-                    cloudDlBtn.disabled = false;
-                    cloudDlBtn.textContent = 'T\u1EA3i v\u1EC1';
-                    alert('Download failed: ' + err.message);
-                });
-            }
+            var dlId = cloudDlBtn.dataset.id;
+            cloudDlBtn.disabled = true;
+            cloudDlBtn.textContent = 'Downloading...';
+            ReaderLib.getBookMeta(dlId).then(function (meta) {
+                if (!meta) throw new Error('Book metadata not found');
+                return CloudSync.downloadBook(meta);
+            }).then(function () {
+                renderLibrary();
+            }).catch(function (err) {
+                cloudDlBtn.disabled = false;
+                cloudDlBtn.textContent = 'T\u1EA3i v\u1EC1';
+                alert('Download failed: ' + err.message);
+            });
             return;
         }
         var delBtn = e.target.closest('.btn-delete');
@@ -695,21 +694,23 @@
 
     function renderCloudBooks() {
         if (!window.CloudSync) return;
-        var books = CloudSync.getCloudOnlyBooks();
-        if (!books.length) {
-            syncCloudBooks.innerHTML = '';
-            return;
-        }
-        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px">Cloud-only books</div>';
-        for (var i = 0; i < books.length; i++) {
-            var b = books[i];
-            html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;margin-bottom:4px;font-size:13px">' +
-                '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + VP.escapeHtml(b.title) + '</span>' +
-                '<span style="font-size:11px;color:var(--text-muted)">' + VP.formatSize(b.size) + '</span>' +
-                '<button class="btn btn-accent btn-cloud-dl" data-index="' + i + '" style="padding:4px 10px;font-size:11px;border-radius:6px">Download</button>' +
-                '</div>';
-        }
-        syncCloudBooks.innerHTML = html;
+        ReaderLib.getAllBooksMeta().then(function (allBooks) {
+            var books = allBooks.filter(function (b) { return b.cloudOnly; });
+            if (!books.length) {
+                syncCloudBooks.innerHTML = '';
+                return;
+            }
+            var html = '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px">Cloud-only books</div>';
+            for (var i = 0; i < books.length; i++) {
+                var b = books[i];
+                html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;margin-bottom:4px;font-size:13px">' +
+                    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + VP.escapeHtml(b.title) + '</span>' +
+                    '<span style="font-size:11px;color:var(--text-muted)">' + VP.formatSize(b.size) + '</span>' +
+                    '<button class="btn btn-accent btn-cloud-dl" data-id="' + b.id + '" style="padding:4px 10px;font-size:11px;border-radius:6px">Download</button>' +
+                    '</div>';
+            }
+            syncCloudBooks.innerHTML = html;
+        });
     }
 
     // Sync modal handlers
@@ -820,17 +821,18 @@
         });
     }
 
-    // Download cloud-only book
+    // Download cloud-only book from sync modal
     if (syncCloudBooks) {
         syncCloudBooks.addEventListener('click', function (e) {
             var dlBtn = e.target.closest('.btn-cloud-dl');
             if (!dlBtn) return;
-            var idx = parseInt(dlBtn.dataset.index, 10);
-            var books = CloudSync.getCloudOnlyBooks();
-            if (idx < 0 || idx >= books.length) return;
+            var dlId = dlBtn.dataset.id;
             dlBtn.disabled = true;
             dlBtn.textContent = 'Downloading...';
-            CloudSync.downloadBook(books[idx]).then(function () {
+            ReaderLib.getBookMeta(dlId).then(function (meta) {
+                if (!meta) throw new Error('Book metadata not found');
+                return CloudSync.downloadBook(meta);
+            }).then(function () {
                 renderCloudBooks();
                 renderLibrary();
             }).catch(function (err) {

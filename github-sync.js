@@ -235,9 +235,11 @@
             return resp.json();
         }).then(function (gists) {
             for (var i = 0; i < gists.length; i++) {
-                if (gists[i].description === GIST_DESCRIPTION) {
+                if (gists[i].description === GIST_DESCRIPTION && gists[i].files && gists[i].files[META_FILENAME]) {
                     _saveGistId(gists[i].id);
-                    return gists[i];
+                    // Re-fetch full gist by ID (list endpoint returns truncated files)
+                    return _ghFetch(_gistApiUrl(GIST_API_PATH + '/' + gists[i].id))
+                        .then(function (r) { return r.json(); });
                 }
             }
             // Not found — create new
@@ -260,6 +262,7 @@
     }
 
     function _readGistFile(gist, filename) {
+        if (!gist || !gist.files) return Promise.resolve(null);
         var file = gist.files[filename];
         if (!file) return Promise.resolve(null);
         // If truncated, fetch via same-origin proxy to avoid CORS blocks.
@@ -367,6 +370,7 @@
             // Delete cloud files for books deleted locally
             var localDeleted = data.local.deletedBooks || [];
             for (var di = 0; di < localDeleted.length; di++) {
+                if (!currentGist || !currentGist.files) continue;
                 var fname = 'book_' + localDeleted[di].id + '.txt';
                 if (currentGist.files[fname]) {
                     gistDeletes.push(fname);
@@ -380,7 +384,7 @@
                 return _updateGistFiles(gistUpdates, gistDeletes.length > 0 ? gistDeletes : undefined);
             }).then(function () {
                 _progress('Applying changes...');
-                return SyncCommon.applyMergedToLocal(result.merged);
+                return SyncCommon.applyMergedToLocal(result.merged, result.booksCloudOnly);
             }).then(function () {
                 summary.updated = Object.keys(result.merged.progress).length;
                 return summary;

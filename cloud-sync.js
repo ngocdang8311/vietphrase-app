@@ -349,7 +349,7 @@
                 return _uploadFile(META_FILENAME, metaJson, 'application/json', existingId || null);
             }).then(function () {
                 _progress('Applying changes...');
-                return SyncCommon.applyMergedToLocal(result.merged);
+                return SyncCommon.applyMergedToLocal(result.merged, result.booksCloudOnly);
             }).then(function () {
                 summary.updated = Object.keys(result.merged.progress).length;
                 return summary;
