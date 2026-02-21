@@ -254,7 +254,9 @@
         progress('Đọc file ZIP...');
         console.log(LOG, 'Loading zip.js module...');
         return import('./foliate-js/vendor/zip.js').then(function (zipMod) {
-            console.log(LOG, 'zip.js loaded, creating ZipReader...');
+            console.log(LOG, 'zip.js loaded, disabling web workers...');
+            // Disable web workers — avoids silent hangs when loaded from SW cache
+            zipMod.configure({ useWebWorkers: false });
             var reader = new zipMod.ZipReader(new zipMod.BlobReader(file));
             return reader.getEntries().then(function (entries) {
                 console.log(LOG, 'ZIP entries:', entries.length, entries.map(function (e) { return e.filename; }));
@@ -274,8 +276,12 @@
                 }
 
                 progress('Đọc metadata...');
-                console.log(LOG, 'Reading metadata.json...');
-                return metaEntry.getData(new zipMod.TextWriter()).then(function (jsonText) {
+                console.log(LOG, 'Reading metadata.json via BlobWriter...');
+                // Use BlobWriter instead of TextWriter — more reliable for large entries
+                return metaEntry.getData(new zipMod.BlobWriter()).then(function (blob) {
+                    console.log(LOG, 'metadata.json blob ready, size:', blob.size, '→ reading as text');
+                    return blob.text();
+                }).then(function (jsonText) {
                     console.log(LOG, 'metadata.json read, length:', jsonText.length);
                     var backup;
                     try {
