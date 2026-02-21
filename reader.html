@@ -553,8 +553,18 @@
             background: linear-gradient(135deg, var(--text), var(--accent));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
+        .crawler-index-author {
+            font-size: 14px; color: var(--accent-2); font-weight: 600;
+            margin-bottom: 4px;
+        }
         .crawler-index-info {
-            font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
+            font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;
+        }
+        .crawler-index-desc {
+            font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+            margin-bottom: 16px; padding: 12px;
+            background: var(--surface); border-radius: 10px;
+            max-height: 120px; overflow-y: auto;
         }
         .crawler-index-list {
             display: flex; flex-direction: column; gap: 2px;

@@ -101,7 +101,7 @@
             var zh = line.substring(0, eq).trim();
             var viRaw = line.substring(eq + 1).trim();
             var vi = extractMeaning(viRaw);
-            if (zh && vi) entries.push([zh, vi, priority]);
+            if (zh) entries.push([zh, vi, priority]);
         }
         return entries;
     }

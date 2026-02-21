@@ -160,7 +160,9 @@
                 }
             },
             novel: {
-                title: '.booktitle, h1',
+                title: 'h1.booktitle, h1',
+                author: '.booktag a.red',
+                description: '.bookintro',
                 chapterList: '.chapterlist dd a',
                 reverseChapters: false
             },
@@ -279,6 +281,15 @@
             result.isIndexPage = true;
             var titleEl2 = safeQuery(doc, siteConfig.novel.title);
             result.title = titleEl2 ? titleEl2.textContent.trim() : doc.title || '';
+            // Extract author and description if selectors exist
+            if (siteConfig.novel.author) {
+                var authorEl = safeQuery(doc, siteConfig.novel.author);
+                if (authorEl) result.author = authorEl.textContent.trim();
+            }
+            if (siteConfig.novel.description) {
+                var descEl = safeQuery(doc, siteConfig.novel.description);
+                if (descEl) result.description = extractTextContent(descEl);
+            }
             result.chapterLinks = [];
             for (var i = 0; i < chapterEls.length; i++) {
                 var a = chapterEls[i];
@@ -1282,12 +1293,22 @@
     // ===== Browse View Rendering =====
 
     function renderIndexPage(parsed) {
-        var html = '<div class="crawler-index-title">' + VP.escapeHtml(parsed.title) + '</div>';
+        var html = '<div class="crawler-index-title" data-zh="' + VP.escapeHtml(parsed.title) + '">' +
+            VP.escapeHtml(parsed.title) + '</div>';
+        if (parsed.author) {
+            html += '<div class="crawler-index-author" data-zh="' + VP.escapeHtml(parsed.author) + '">' +
+                VP.escapeHtml(parsed.author) + '</div>';
+        }
         html += '<div class="crawler-index-info">' + parsed.chapterLinks.length + ' ch\u01B0\u01A1ng</div>';
+        if (parsed.description) {
+            html += '<div class="crawler-index-desc" data-zh="' + VP.escapeHtml(parsed.description) + '">' +
+                VP.escapeHtml(parsed.description) + '</div>';
+        }
         html += '<div class="crawler-index-list">';
         for (var i = 0; i < parsed.chapterLinks.length; i++) {
             html += '<a class="crawler-index-link" href="javascript:void(0)" data-url="' +
-                VP.escapeHtml(parsed.chapterLinks[i].url) + '">' +
+                VP.escapeHtml(parsed.chapterLinks[i].url) + '" data-zh="' +
+                VP.escapeHtml(parsed.chapterLinks[i].title) + '">' +
                 VP.escapeHtml(parsed.chapterLinks[i].title) + '</a>';
         }
         html += '</div>';
@@ -1316,6 +1337,27 @@
         }
 
         populateSidebar(parsed.chapterLinks);
+
+        // Async translate title, author, description, and chapter names
+        translateIndexPage();
+    }
+
+    function translateIndexPage() {
+        ensureDict().then(function () {
+            var titleEl = els.content.querySelector('.crawler-index-title[data-zh]');
+            if (titleEl) titleEl.textContent = DictEngine.translate(titleEl.dataset.zh);
+
+            var authorEl = els.content.querySelector('.crawler-index-author[data-zh]');
+            if (authorEl) authorEl.textContent = DictEngine.translate(authorEl.dataset.zh);
+
+            var descEl = els.content.querySelector('.crawler-index-desc[data-zh]');
+            if (descEl) descEl.textContent = DictEngine.translate(descEl.dataset.zh);
+
+            var links = els.content.querySelectorAll('.crawler-index-link[data-zh]');
+            for (var i = 0; i < links.length; i++) {
+                links[i].textContent = DictEngine.translate(links[i].dataset.zh);
+            }
+        }).catch(function () {});
     }
 
     function renderChapterPage(parsed, viContent) {
@@ -1374,13 +1416,23 @@
             var activeClass = (state.currentUrl === ch.url) ? ' active' : '';
             html += '<div class="crawler-ch-item' + activeClass + '" data-url="' +
                 VP.escapeHtml(ch.url) + '" data-index="' + j + '">' +
-                VP.escapeHtml(ch.title) + '<span class="crawler-ch-saved">' + saved + '</span></div>';
+                '<span class="crawler-ch-name" data-zh="' + VP.escapeHtml(ch.title) + '">' +
+                VP.escapeHtml(ch.title) + '</span>' +
+                '<span class="crawler-ch-saved">' + saved + '</span></div>';
         }
         els.chapterList.innerHTML = html;
 
         if (window.innerWidth > 700) {
             els.sidebar.classList.remove('hidden');
         }
+
+        // Async translate sidebar chapter titles
+        ensureDict().then(function () {
+            var names = els.chapterList.querySelectorAll('.crawler-ch-name[data-zh]');
+            for (var k = 0; k < names.length; k++) {
+                names[k].textContent = DictEngine.translate(names[k].dataset.zh);
+            }
+        }).catch(function () {});
     }
 
     function updateSidebarActive() {
