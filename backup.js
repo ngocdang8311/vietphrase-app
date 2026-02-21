@@ -296,19 +296,21 @@
                         }
                     }
 
-                    // Read ebook content from ZIP entries
-                    var contentPromises = ebookBooks.map(function (book) {
-                        return entryMap[book.zipPath].getData(new zipMod.BlobWriter()).then(function (blob) {
-                            return blob.arrayBuffer();
+                    // Read ebook content from ZIP sequentially
+                    // (zip.js doesn't reliably support parallel getData calls)
+                    var ebookMap = {};
+                    var chain = Promise.resolve();
+                    ebookBooks.forEach(function (book) {
+                        chain = chain.then(function () {
+                            return entryMap[book.zipPath].getData(new zipMod.BlobWriter()).then(function (blob) {
+                                return blob.arrayBuffer();
+                            }).then(function (ab) {
+                                ebookMap[book.id] = ab;
+                            });
                         });
                     });
 
-                    return Promise.all(contentPromises).then(function (ebookContents) {
-                        // Build ebook map: bookId -> ArrayBuffer
-                        var ebookMap = {};
-                        for (var k = 0; k < ebookBooks.length; k++) {
-                            ebookMap[ebookBooks[k].id] = ebookContents[k];
-                        }
+                    return chain.then(function () {
                         return reader.close().then(function () {
                             return _restoreData(d, ebookMap);
                         });
