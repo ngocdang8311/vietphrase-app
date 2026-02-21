@@ -562,12 +562,23 @@
             <div class="modal-body">
                 <div id="syncStatusMsg" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px"></div>
                 <div id="syncConnected" class="hidden">
+                    <div id="syncProviderBadge" style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-align:center"></div>
                     <button class="btn btn-accent" id="btnDoSync" style="width:100%;padding:12px;margin-bottom:8px">Sync Now</button>
                     <div id="syncCloudBooks" style="margin-top:8px"></div>
                     <button class="btn btn-red" id="btnDisconnect" style="width:100%;padding:10px;margin-top:12px;font-size:12px">Ng&#7855;t k&#7871;t n&#7889;i</button>
                 </div>
                 <div id="syncDisconnected">
-                    <button class="btn btn-accent" id="btnConnect" style="width:100%;padding:12px">K&#7871;t n&#7889;i Google Drive</button>
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <button class="btn btn-accent" id="btnConnectGoogle" style="flex:1;padding:12px">Google Drive</button>
+                        <button class="btn btn-accent" id="btnConnectGithub" style="flex:1;padding:12px">GitHub Gist</button>
+                    </div>
+                    <div id="deviceFlowUI" class="hidden" style="text-align:center;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Nh&#7853;p m&#227; n&#224;y t&#7841;i GitHub:</div>
+                        <div id="deviceFlowCode" style="font-size:28px;font-weight:800;letter-spacing:4px;color:var(--accent-2);margin-bottom:8px;font-family:monospace"></div>
+                        <a id="deviceFlowLink" href="https://github.com/login/device" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px;font-weight:600">M&#7903; github.com/login/device &rarr;</a>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">&#272;ang ch&#7901; x&#225;c nh&#7853;n...</div>
+                        <button class="btn btn-default" id="btnCancelDevice" style="margin-top:8px;padding:6px 14px;font-size:12px">H&#7911;y</button>
+                    </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">&#272;&#7891;ng b&#7897; s&#225;ch, ti&#7871;n tr&#236;nh &#273;&#7885;c, c&#224;i &#273;&#7863;t gi&#7919;a c&#225;c thi&#7871;t b&#7883;</div>
                 </div>
                 <button class="btn btn-default" id="btnCloseSync" style="width:100%;padding:10px;margin-top:8px">&#272;&#243;ng</button>
@@ -592,7 +603,9 @@
     <script src="https://accounts.google.com/gsi/client" async defer onload="window.__onGisLoaded && window.__onGisLoaded()"></script>
     <script src="utils.js"></script>
     <script src="reader-lib.js"></script>
+    <script src="sync-common.js"></script>
     <script src="cloud-sync.js"></script>
+    <script src="github-sync.js"></script>
     <script src="backup.js"></script>
     <script src="reader-app.js"></script>
 </body>

@@ -71,11 +71,16 @@
     var syncStatusMsg = document.getElementById('syncStatusMsg');
     var syncConnected = document.getElementById('syncConnected');
     var syncDisconnected = document.getElementById('syncDisconnected');
+    var syncProviderBadge = document.getElementById('syncProviderBadge');
     var btnDoSync = document.getElementById('btnDoSync');
-    var btnConnect = document.getElementById('btnConnect');
+    var btnConnectGoogle = document.getElementById('btnConnectGoogle');
+    var btnConnectGithub = document.getElementById('btnConnectGithub');
     var btnDisconnect = document.getElementById('btnDisconnect');
     var btnCloseSync = document.getElementById('btnCloseSync');
     var syncCloudBooks = document.getElementById('syncCloudBooks');
+    var deviceFlowUI = document.getElementById('deviceFlowUI');
+    var deviceFlowCode = document.getElementById('deviceFlowCode');
+    var btnCancelDevice = document.getElementById('btnCancelDevice');
 
     // --- State ---
     var currentBook = null;
@@ -670,6 +675,10 @@
         if (CloudSync.isSignedIn()) {
             syncConnected.classList.remove('hidden');
             syncDisconnected.classList.add('hidden');
+            deviceFlowUI.classList.add('hidden');
+            var providerName = CloudSync.getActiveProviderName();
+            var label = providerName === 'github' ? 'GitHub Gist' : 'Google Drive';
+            syncProviderBadge.textContent = 'Connected via ' + label;
             var lastSync = CloudSync.getLastSyncTime();
             if (lastSync) {
                 syncStatusMsg.textContent = 'Last sync: ' + new Date(lastSync).toLocaleString();
@@ -718,20 +727,57 @@
             if (e.target === syncModal) syncModal.classList.add('hidden');
         });
     }
-    if (btnConnect) {
-        btnConnect.addEventListener('click', function () {
-            btnConnect.disabled = true;
-            btnConnect.textContent = 'Connecting...';
+    if (btnConnectGoogle) {
+        btnConnectGoogle.addEventListener('click', function () {
+            CloudSync.setProvider('google');
+            btnConnectGoogle.disabled = true;
+            btnConnectGoogle.textContent = 'Connecting...';
             CloudSync.signIn().then(function () {
-                btnConnect.disabled = false;
-                btnConnect.textContent = 'K\u1EBFt n\u1ED1i Google Drive';
+                btnConnectGoogle.disabled = false;
+                btnConnectGoogle.textContent = 'Google Drive';
                 updateSyncButton();
                 updateSyncModal();
             }).catch(function (err) {
-                btnConnect.disabled = false;
-                btnConnect.textContent = 'K\u1EBFt n\u1ED1i Google Drive';
+                btnConnectGoogle.disabled = false;
+                btnConnectGoogle.textContent = 'Google Drive';
                 syncStatusMsg.textContent = 'Error: ' + err.message;
             });
+        });
+    }
+    if (btnConnectGithub) {
+        btnConnectGithub.addEventListener('click', function () {
+            CloudSync.setProvider('github');
+            btnConnectGithub.disabled = true;
+            btnConnectGithub.textContent = 'Connecting...';
+            deviceFlowUI.classList.add('hidden');
+            CloudSync.signIn({
+                onDeviceCode: function (info) {
+                    deviceFlowUI.classList.remove('hidden');
+                    deviceFlowCode.textContent = info.userCode;
+                    btnConnectGithub.textContent = 'Waiting...';
+                }
+            }).then(function () {
+                btnConnectGithub.disabled = false;
+                btnConnectGithub.textContent = 'GitHub Gist';
+                deviceFlowUI.classList.add('hidden');
+                updateSyncButton();
+                updateSyncModal();
+            }).catch(function (err) {
+                btnConnectGithub.disabled = false;
+                btnConnectGithub.textContent = 'GitHub Gist';
+                deviceFlowUI.classList.add('hidden');
+                syncStatusMsg.textContent = 'Error: ' + err.message;
+            });
+        });
+    }
+    if (btnCancelDevice) {
+        btnCancelDevice.addEventListener('click', function () {
+            if (window.GitHubGistProvider) GitHubGistProvider.cancelSignIn();
+            deviceFlowUI.classList.add('hidden');
+            if (btnConnectGithub) {
+                btnConnectGithub.disabled = false;
+                btnConnectGithub.textContent = 'GitHub Gist';
+            }
         });
     }
     if (btnDisconnect) {

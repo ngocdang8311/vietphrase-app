@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v11';
+const CACHE_NAME = 'cnvn-dict-v12';
 const APP_ASSETS = [
     './',
     './index.html',
@@ -11,7 +11,9 @@ const APP_ASSETS = [
     './reader-lib.js',
     './reader-app.js',
     './backup.js',
-    './cloud-sync.js'
+    './sync-common.js',
+    './cloud-sync.js',
+    './github-sync.js'
 ];
 
 self.addEventListener('install', function (event) {

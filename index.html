@@ -1191,11 +1191,22 @@
             <div style="display:flex;flex-direction:column;gap:10px">
                 <div id="syncStatusMsg" style="font-size:13px;color:var(--text-secondary)"></div>
                 <div id="syncConnected" class="hidden">
+                    <div id="syncProviderBadge" style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-align:center"></div>
                     <button class="btn-import" id="btnDoSync" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">Sync Now</button>
                     <button id="btnDisconnect" style="padding:10px 18px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(255,59,48,0.1);color:#ff6b6b;width:100%;text-align:center;margin-top:8px">Ng&#7855;t k&#7871;t n&#7889;i</button>
                 </div>
                 <div id="syncDisconnected">
-                    <button class="btn-import" id="btnConnect" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">K&#7871;t n&#7889;i Google Drive</button>
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <button class="btn-import" id="btnConnectGoogle" style="flex:1;padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);text-align:center">Google Drive</button>
+                        <button class="btn-import" id="btnConnectGithub" style="flex:1;padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);text-align:center">GitHub Gist</button>
+                    </div>
+                    <div id="deviceFlowUI" class="hidden" style="text-align:center;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Nh&#7853;p m&#227; n&#224;y t&#7841;i GitHub:</div>
+                        <div id="deviceFlowCode" style="font-size:28px;font-weight:800;letter-spacing:4px;color:var(--accent-2);margin-bottom:8px;font-family:monospace"></div>
+                        <a id="deviceFlowLink" href="https://github.com/login/device" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px;font-weight:600">M&#7903; github.com/login/device &rarr;</a>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">&#272;ang ch&#7901; x&#225;c nh&#7853;n...</div>
+                        <button id="btnCancelDevice" style="margin-top:8px;padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);color:var(--text-secondary);border:1px solid var(--border)">H&#7911;y</button>
+                    </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">&#272;&#7891;ng b&#7897; custom phrases, settings gi&#7919;a c&#225;c thi&#7871;t b&#7883;</div>
                 </div>
                 <button id="btnCloseSync" style="padding:10px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);color:var(--text-secondary);width:100%;text-align:center;border:1px solid var(--border)">&#272;&#243;ng</button>
@@ -1230,7 +1241,9 @@
     <script src="utils.js"></script>
     <script src="dict-engine.js"></script>
     <script src="reader-lib.js"></script>
+    <script src="sync-common.js"></script>
     <script src="cloud-sync.js"></script>
+    <script src="github-sync.js"></script>
     <script src="backup.js"></script>
     <script src="app.js"></script>
 </body>
