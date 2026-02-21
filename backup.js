@@ -3,9 +3,9 @@
 // Backward-compatible: imports both .zip (new) and .json (legacy)
 (function () {
     var BACKUP_VERSION = 2;
+    var LOG = '[Backup]';
 
     // ===== Minimal ZIP builder (STORE, no compression) =====
-    // Ebook files are already internally compressed, so STORE is optimal.
 
     var _crc32Table = null;
     function _getCrc32Table() {
@@ -36,83 +36,76 @@
         return { time: time, date: day };
     }
 
-    // entries: [{ name: string, data: Uint8Array }]
-    // Returns Blob
     function _buildZip(entries) {
         var encoder = new TextEncoder();
         var now = _dosDateTime(new Date());
         var localHeaders = [];
         var offset = 0;
 
-        // Phase 1: build local file headers + data
         for (var i = 0; i < entries.length; i++) {
             var e = entries[i];
             var nameBytes = encoder.encode(e.name);
             var crc = _crc32(e.data);
             var size = e.data.length;
 
-            // Local file header: 30 bytes + name
             var lh = new ArrayBuffer(30 + nameBytes.length);
             var lv = new DataView(lh);
-            lv.setUint32(0, 0x04034b50, true);   // signature
-            lv.setUint16(4, 20, true);             // version needed
-            lv.setUint16(6, 0x0800, true);         // flags (bit 11 = UTF-8)
-            lv.setUint16(8, 0, true);              // compression: STORE
-            lv.setUint16(10, now.time, true);       // mod time
-            lv.setUint16(12, now.date, true);       // mod date
-            lv.setUint32(14, crc, true);           // crc32
-            lv.setUint32(18, size, true);          // compressed size
-            lv.setUint32(22, size, true);          // uncompressed size
-            lv.setUint16(26, nameBytes.length, true); // filename length
-            lv.setUint16(28, 0, true);             // extra field length
+            lv.setUint32(0, 0x04034b50, true);
+            lv.setUint16(4, 20, true);
+            lv.setUint16(6, 0x0800, true);
+            lv.setUint16(8, 0, true);
+            lv.setUint16(10, now.time, true);
+            lv.setUint16(12, now.date, true);
+            lv.setUint32(14, crc, true);
+            lv.setUint32(18, size, true);
+            lv.setUint32(22, size, true);
+            lv.setUint16(26, nameBytes.length, true);
+            lv.setUint16(28, 0, true);
             new Uint8Array(lh).set(nameBytes, 30);
 
             localHeaders.push({ lh: lh, data: e.data, nameBytes: nameBytes, crc: crc, size: size, offset: offset });
             offset += lh.byteLength + size;
         }
 
-        // Phase 2: build central directory
         var cdParts = [];
         var cdSize = 0;
         for (var j = 0; j < localHeaders.length; j++) {
             var rec = localHeaders[j];
             var cd = new ArrayBuffer(46 + rec.nameBytes.length);
             var cv = new DataView(cd);
-            cv.setUint32(0, 0x02014b50, true);   // signature
-            cv.setUint16(4, 20, true);             // version made by
-            cv.setUint16(6, 20, true);             // version needed
-            cv.setUint16(8, 0x0800, true);         // flags (UTF-8)
-            cv.setUint16(10, 0, true);             // compression: STORE
+            cv.setUint32(0, 0x02014b50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint16(8, 0x0800, true);
+            cv.setUint16(10, 0, true);
             cv.setUint16(12, now.time, true);
             cv.setUint16(14, now.date, true);
             cv.setUint32(16, rec.crc, true);
-            cv.setUint32(20, rec.size, true);      // compressed size
-            cv.setUint32(24, rec.size, true);      // uncompressed size
+            cv.setUint32(20, rec.size, true);
+            cv.setUint32(24, rec.size, true);
             cv.setUint16(28, rec.nameBytes.length, true);
-            cv.setUint16(30, 0, true);             // extra field length
-            cv.setUint16(32, 0, true);             // comment length
-            cv.setUint16(34, 0, true);             // disk number start
-            cv.setUint16(36, 0, true);             // internal attrs
-            cv.setUint32(38, 0, true);             // external attrs
-            cv.setUint32(42, rec.offset, true);    // local header offset
+            cv.setUint16(30, 0, true);
+            cv.setUint16(32, 0, true);
+            cv.setUint16(34, 0, true);
+            cv.setUint16(36, 0, true);
+            cv.setUint32(38, 0, true);
+            cv.setUint32(42, rec.offset, true);
             new Uint8Array(cd).set(rec.nameBytes, 46);
             cdParts.push(cd);
             cdSize += cd.byteLength;
         }
 
-        // Phase 3: EOCD record
         var eocd = new ArrayBuffer(22);
         var ev = new DataView(eocd);
-        ev.setUint32(0, 0x06054b50, true);        // signature
-        ev.setUint16(4, 0, true);                  // disk number
-        ev.setUint16(6, 0, true);                  // disk with CD
-        ev.setUint16(8, entries.length, true);      // entries on this disk
-        ev.setUint16(10, entries.length, true);     // total entries
-        ev.setUint32(12, cdSize, true);            // size of CD
-        ev.setUint32(16, offset, true);            // offset of CD
-        ev.setUint16(20, 0, true);                 // comment length
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, entries.length, true);
+        ev.setUint16(10, entries.length, true);
+        ev.setUint32(12, cdSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
 
-        // Assemble blob parts
         var parts = [];
         for (var k = 0; k < localHeaders.length; k++) {
             parts.push(localHeaders[k].lh);
@@ -136,19 +129,28 @@
 
     function _noop() {}
 
+    // Blob → ArrayBuffer with FileReader fallback for older browsers
+    function _blobToArrayBuffer(blob) {
+        if (blob.arrayBuffer) return blob.arrayBuffer();
+        return new Promise(function (resolve, reject) {
+            var fr = new FileReader();
+            fr.onload = function () { resolve(fr.result); };
+            fr.onerror = function () { reject(fr.error); };
+            fr.readAsArrayBuffer(blob);
+        });
+    }
+
     // ===== Export =====
 
     function exportBackup() {
         var data = {};
 
-        // Settings from localStorage
         data.settings = {
             theme: localStorage.getItem('theme'),
             readerSettings: localStorage.getItem('readerSettings'),
             lastReadBook: localStorage.getItem('lastReadBook')
         };
 
-        // Custom phrases (only if DictEngine available)
         var customPromise;
         if (window.DictEngine && DictEngine.isReady) {
             data.customPhrases = DictEngine.getCustomEntries();
@@ -158,7 +160,6 @@
             customPromise = Promise.resolve(null);
         }
 
-        // Gather all async data
         return Promise.all([
             customPromise,
             ReaderLib.exportAllBooks(),
@@ -168,7 +169,6 @@
             data.books = results[1];
             data.progress = results[2];
 
-            // Identify ebook books and fetch their binary content for ZIP
             var ebookIndices = [];
             var ebookPromises = [];
             for (var i = 0; i < data.books.length; i++) {
@@ -182,7 +182,6 @@
             return Promise.all(ebookPromises).then(function (contents) {
                 var zipEntries = [];
 
-                // Add ebook files to ZIP, annotate metadata with zipPath
                 for (var j = 0; j < ebookIndices.length; j++) {
                     var idx = ebookIndices[j];
                     var bk = data.books[idx];
@@ -198,7 +197,6 @@
                     }
                 }
 
-                // Build metadata.json
                 var backup = {
                     version: BACKUP_VERSION,
                     exportedAt: new Date().toISOString(),
@@ -221,14 +219,15 @@
     }
 
     // ===== Import =====
-    // onProgress(msg): optional callback for UI status updates
 
     function importBackup(file, onProgress) {
         var progress = onProgress || _noop;
         var name = (file.name || '').toLowerCase();
+        console.log(LOG, 'importBackup start, file:', name, 'size:', file.size);
         if (name.endsWith('.json')) {
-            progress('Reading JSON...');
+            progress('Đọc file JSON...');
             return file.text().then(function (text) {
+                console.log(LOG, 'JSON text read, length:', text.length);
                 return _importFromJson(text, progress);
             });
         } else if (name.endsWith('.zip')) {
@@ -238,7 +237,6 @@
         }
     }
 
-    // Legacy JSON import (backward compatibility)
     function _importFromJson(jsonText, progress) {
         var backup;
         try {
@@ -252,13 +250,15 @@
         return _restoreData(backup.data, null, progress);
     }
 
-    // ZIP import using vendored zip.js
     function _importFromZip(file, progress) {
-        progress('Reading ZIP...');
+        progress('Đọc file ZIP...');
+        console.log(LOG, 'Loading zip.js module...');
         return import('./foliate-js/vendor/zip.js').then(function (zipMod) {
+            console.log(LOG, 'zip.js loaded, creating ZipReader...');
             var reader = new zipMod.ZipReader(new zipMod.BlobReader(file));
             return reader.getEntries().then(function (entries) {
-                // Build lookup by filename
+                console.log(LOG, 'ZIP entries:', entries.length, entries.map(function (e) { return e.filename; }));
+
                 var entryMap = {};
                 var metaEntry = null;
                 for (var i = 0; i < entries.length; i++) {
@@ -269,29 +269,29 @@
                 }
 
                 if (!metaEntry) {
-                    return reader.close().then(function () {
-                        throw new Error('Invalid backup: metadata.json not found');
-                    });
+                    reader.close().catch(function () {});
+                    return Promise.reject(new Error('Invalid backup: metadata.json not found'));
                 }
 
-                progress('Reading metadata...');
-                // Read metadata.json
+                progress('Đọc metadata...');
+                console.log(LOG, 'Reading metadata.json...');
                 return metaEntry.getData(new zipMod.TextWriter()).then(function (jsonText) {
+                    console.log(LOG, 'metadata.json read, length:', jsonText.length);
                     var backup;
                     try {
                         backup = JSON.parse(jsonText);
                     } catch (e) {
-                        return reader.close().then(function () {
-                            throw new Error('Invalid metadata.json');
-                        });
+                        reader.close().catch(function () {});
+                        return Promise.reject(new Error('Invalid metadata.json'));
                     }
                     if (!backup.data) {
-                        return reader.close().then(function () {
-                            throw new Error('Invalid backup format');
-                        });
+                        reader.close().catch(function () {});
+                        return Promise.reject(new Error('Invalid backup format'));
                     }
 
                     var d = backup.data;
+                    var bookCount = d.books ? d.books.length : 0;
+                    console.log(LOG, 'Parsed: books=' + bookCount + ', progress=' + (d.progress ? d.progress.length : 0));
 
                     // Identify ebook books with ZIP content
                     var ebookBooks = [];
@@ -302,6 +302,7 @@
                             }
                         }
                     }
+                    console.log(LOG, 'Ebook entries to read from ZIP:', ebookBooks.length);
 
                     // Read ebook content from ZIP sequentially
                     var ebookMap = {};
@@ -310,24 +311,27 @@
                     ebookBooks.forEach(function (book) {
                         chain = chain.then(function () {
                             ebookIdx++;
-                            progress('Reading ebook ' + ebookIdx + '/' + ebookBooks.length + '...');
+                            progress('Đọc ebook ' + ebookIdx + '/' + ebookBooks.length + '...');
+                            console.log(LOG, 'Reading ZIP entry:', book.zipPath);
                             return entryMap[book.zipPath].getData(new zipMod.BlobWriter()).then(function (blob) {
-                                return blob.arrayBuffer();
+                                console.log(LOG, 'Got blob, size:', blob.size, '→ converting to ArrayBuffer');
+                                return _blobToArrayBuffer(blob);
                             }).then(function (ab) {
+                                console.log(LOG, 'ArrayBuffer ready, bytes:', ab.byteLength);
                                 ebookMap[book.id] = ab;
                             });
                         });
                     });
 
                     return chain.then(function () {
-                        return reader.close();
-                    }).then(function () {
+                        console.log(LOG, 'All ebook entries read, closing ZipReader...');
+                        // Fire-and-forget close — don't let it block restore
+                        reader.close().catch(function () {});
                         return _restoreData(d, ebookMap, progress);
                     }).catch(function (err) {
-                        return reader.close().then(
-                            function () { throw err; },
-                            function () { throw err; }
-                        );
+                        console.error(LOG, 'ZIP read error:', err);
+                        reader.close().catch(function () {});
+                        throw err;
                     });
                 });
             });
@@ -335,18 +339,19 @@
     }
 
     // Shared restore logic — fully sequential to avoid IDB contention
-    // ebookMap: null (JSON import) or { bookId: ArrayBuffer } (ZIP import)
     function _restoreData(d, ebookMap, progress) {
         var summary = { settings: false, phrases: 0, dicts: 0, books: 0 };
+        console.log(LOG, '_restoreData start');
 
         // Step 1: Restore settings (sync)
-        progress('Restoring settings...');
+        progress('Khôi phục cài đặt...');
         if (d.settings) {
             if (d.settings.theme) localStorage.setItem('theme', d.settings.theme);
             if (d.settings.readerSettings) localStorage.setItem('readerSettings', d.settings.readerSettings);
             if (d.settings.lastReadBook) localStorage.setItem('lastReadBook', d.settings.lastReadBook);
             summary.settings = true;
         }
+        console.log(LOG, 'Settings restored');
 
         // Step 2: Restore custom phrases (sync)
         if (d.customPhrases && window.DictEngine && DictEngine.isReady) {
@@ -359,18 +364,29 @@
             }
             DictEngine.setCustomEntries(current);
         }
+        console.log(LOG, 'Phrases restored:', summary.phrases);
 
-        // Step 3: Restore imported dicts (async, sequential)
+        // Step 3: Restore imported dicts
         return Promise.resolve().then(function () {
             if (d.importedDicts && d.importedDicts.length && window.DictEngine && DictEngine.isReady) {
-                progress('Restoring dictionaries...');
+                progress('Khôi phục từ điển (' + d.importedDicts.length + ')...');
+                console.log(LOG, 'Restoring', d.importedDicts.length, 'dicts...');
                 return DictEngine.restoreImports(d.importedDicts).then(function (count) {
                     summary.dicts = count;
-                }).catch(function () { summary.dicts = 0; });
+                    console.log(LOG, 'Dicts restored:', count);
+                }).catch(function (err) {
+                    console.warn(LOG, 'Dict restore failed:', err);
+                    summary.dicts = 0;
+                });
+            } else {
+                console.log(LOG, 'Skipping dict restore (no data or DictEngine not ready)');
             }
         }).then(function () {
-            // Step 4: Restore books — separate regular and ebook
-            if (!d.books || !d.books.length) return;
+            // Step 4: Restore books
+            if (!d.books || !d.books.length) {
+                console.log(LOG, 'No books to restore');
+                return;
+            }
 
             var regularBooks = [];
             var ebookBooksToRestore = [];
@@ -383,23 +399,28 @@
                     regularBooks.push(book);
                 }
             }
+            console.log(LOG, 'Books split: regular=' + regularBooks.length + ', ebook=' + ebookBooksToRestore.length);
 
             // 4a: Restore regular (text) books
             var chain = Promise.resolve();
             if (regularBooks.length) {
                 chain = chain.then(function () {
-                    progress('Restoring text books...');
+                    progress('Khôi phục ' + regularBooks.length + ' sách text...');
+                    console.log(LOG, 'restoreBooks() start...');
                     return ReaderLib.restoreBooks(regularBooks).then(function (count) {
                         summary.books += count;
-                    }).catch(function () {});
+                        console.log(LOG, 'restoreBooks() done, count:', count);
+                    }).catch(function (err) {
+                        console.error(LOG, 'restoreBooks() error:', err);
+                    });
                 });
             }
 
-            // 4b: Restore ebook books sequentially (meta + content per book)
+            // 4b: Restore ebook books sequentially
             ebookBooksToRestore.forEach(function (book, idx) {
                 chain = chain.then(function () {
-                    progress('Restoring ebook ' + (idx + 1) + '/' + ebookBooksToRestore.length + '...');
-                    // Clean metadata: strip zipPath and contentOmitted
+                    progress('Khôi phục ebook ' + (idx + 1) + '/' + ebookBooksToRestore.length + '...');
+                    console.log(LOG, 'Restoring ebook:', book.title || book.id);
                     var meta = {};
                     for (var k in book) {
                         if (book.hasOwnProperty(k) && k !== 'zipPath' && k !== 'contentOmitted' && k !== 'content') {
@@ -408,11 +429,13 @@
                     }
                     var content = ebookMap[book.id];
                     return ReaderLib.saveBookMeta(meta).then(function () {
+                        console.log(LOG, 'Meta saved, saving content', content.byteLength, 'bytes...');
                         return ReaderLib.saveBookContent(meta.id, content);
                     }).then(function () {
                         summary.books++;
+                        console.log(LOG, 'Ebook restored OK');
                     }).catch(function (err) {
-                        console.warn('[Backup] Failed to restore ebook:', meta.title, err);
+                        console.warn(LOG, 'Failed to restore ebook:', meta.title, err);
                     });
                 });
             });
@@ -421,10 +444,16 @@
         }).then(function () {
             // Step 5: Restore progress
             if (d.progress && d.progress.length) {
-                progress('Restoring progress...');
-                return ReaderLib.restoreProgress(d.progress).catch(function () {});
+                progress('Khôi phục tiến độ đọc...');
+                console.log(LOG, 'Restoring', d.progress.length, 'progress records...');
+                return ReaderLib.restoreProgress(d.progress).then(function () {
+                    console.log(LOG, 'Progress restored');
+                }).catch(function (err) {
+                    console.warn(LOG, 'Progress restore failed:', err);
+                });
             }
         }).then(function () {
+            console.log(LOG, 'Import complete:', JSON.stringify(summary));
             return summary;
         });
     }
