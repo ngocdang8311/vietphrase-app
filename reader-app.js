@@ -700,16 +700,15 @@
                 syncCloudBooks.innerHTML = '';
                 return;
             }
-            var html = '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px">Cloud-only books</div>';
-            for (var i = 0; i < books.length; i++) {
-                var b = books[i];
-                html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;margin-bottom:4px;font-size:13px">' +
-                    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + VP.escapeHtml(b.title) + '</span>' +
-                    '<span style="font-size:11px;color:var(--text-muted)">' + VP.formatSize(b.size) + '</span>' +
-                    '<button class="btn btn-accent btn-cloud-dl" data-id="' + b.id + '" style="padding:4px 10px;font-size:11px;border-radius:6px">Download</button>' +
-                    '</div>';
-            }
-            syncCloudBooks.innerHTML = html;
+            var totalSize = 0;
+            for (var i = 0; i < books.length; i++) totalSize += books[i].size || 0;
+            syncCloudBooks.innerHTML =
+                '<div style="padding:10px 12px;background:var(--surface);border:1px dashed var(--border);border-radius:10px">' +
+                '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">' +
+                books.length + ' s\u00E1ch tr\u00EAn cloud ch\u01B0a t\u1EA3i (' + VP.formatSize(totalSize) + ')' +
+                '</div>' +
+                '<button class="btn btn-accent" id="btnDownloadAll" style="width:100%;padding:10px;font-size:13px">' +
+                'T\u1EA3i t\u1EA5t c\u1EA3</button></div>';
         });
     }
 
@@ -821,23 +820,35 @@
         });
     }
 
-    // Download cloud-only book from sync modal
+    // Download all cloud-only books from sync modal
     if (syncCloudBooks) {
         syncCloudBooks.addEventListener('click', function (e) {
-            var dlBtn = e.target.closest('.btn-cloud-dl');
-            if (!dlBtn) return;
-            var dlId = dlBtn.dataset.id;
-            dlBtn.disabled = true;
-            dlBtn.textContent = 'Downloading...';
-            ReaderLib.getBookMeta(dlId).then(function (meta) {
-                if (!meta) throw new Error('Book metadata not found');
-                return CloudSync.downloadBook(meta);
+            var dlAllBtn = e.target.closest('#btnDownloadAll');
+            if (!dlAllBtn) return;
+            dlAllBtn.disabled = true;
+            dlAllBtn.textContent = '\u0110ang t\u1EA3i...';
+            ReaderLib.getAllBooksMeta().then(function (allBooks) {
+                var cloudBooks = allBooks.filter(function (b) { return b.cloudOnly; });
+                if (!cloudBooks.length) return;
+                var total = cloudBooks.length;
+                var done = 0;
+                var chain = Promise.resolve();
+                cloudBooks.forEach(function (meta) {
+                    chain = chain.then(function () {
+                        done++;
+                        dlAllBtn.textContent = '\u0110ang t\u1EA3i ' + done + '/' + total + '...';
+                        return CloudSync.downloadBook(meta).catch(function (err) {
+                            console.warn('[Sync] Download failed:', meta.title, err.message);
+                        });
+                    });
+                });
+                return chain;
             }).then(function () {
                 renderCloudBooks();
                 renderLibrary();
             }).catch(function (err) {
-                dlBtn.disabled = false;
-                dlBtn.textContent = 'Download';
+                dlAllBtn.disabled = false;
+                dlAllBtn.textContent = 'T\u1EA3i t\u1EA5t c\u1EA3';
                 alert('Download failed: ' + err.message);
             });
         });
