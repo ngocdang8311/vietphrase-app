@@ -60,6 +60,18 @@
     var dmAddVi = document.getElementById('dmAddVi');
     var dmAddBtn = document.getElementById('dmAddBtn');
 
+    // Backup elements
+    var btnBackup = document.getElementById('btnBackup');
+    var backupModal = document.getElementById('backupModal');
+    var btnExportBackup = document.getElementById('btnExportBackup');
+    var btnImportBackup = document.getElementById('btnImportBackup');
+    var backupFileInput = document.getElementById('backupFileInput');
+    var backupStatus = document.getElementById('backupStatus');
+    var btnCloseBackup = document.getElementById('btnCloseBackup');
+
+    // Continue reading
+    var continueReading = document.getElementById('continueReading');
+
     // State
     let activeTab = 'text';
     let translatedFiles = [];
@@ -94,7 +106,7 @@
     tabFile.addEventListener('click', function () { switchTab('file'); });
     tabDict.addEventListener('click', function () { switchTab('dict'); });
 
-    // --- Output mode toggle (Việt Phrase / Hán Việt) ---
+    // --- Output mode toggle (Viet Phrase / Han Viet) ---
     var outputToggleBtns = document.querySelectorAll('.output-toggle-btn');
     function doTranslate() {
         if (!DictEngine.isReady) {
@@ -190,14 +202,14 @@
     function processFile(file, index) {
         const item = document.createElement('div');
         item.className = 'file-item';
-        item.innerHTML = '<span class="file-name">' + escapeHtml(file.name) + '</span>' +
-            ' <span class="file-size">(' + formatSize(file.size) + ')</span>' +
+        item.innerHTML = '<span class="file-name">' + VP.escapeHtml(file.name) + '</span>' +
+            ' <span class="file-size">(' + VP.formatSize(file.size) + ')</span>' +
             ' <span class="file-status" id="fstatus' + index + '">...</span>';
         fileList.appendChild(item);
 
         const reader = new FileReader();
         reader.onload = function (e) {
-            var text = decodeBuffer(e.target.result);
+            var text = VP.decodeBuffer(e.target.result);
             var start = performance.now();
             var lines = text.split('\n');
             var translated = [];
@@ -216,7 +228,7 @@
                 dlBtn.className = 'btn-file-dl';
                 dlBtn.textContent = 'Download';
                 dlBtn.addEventListener('click', function () {
-                    downloadFile('vi_' + file.name, result);
+                    VP.downloadFile('vi_' + file.name, result);
                 });
                 status.parentNode.appendChild(dlBtn);
             }
@@ -230,21 +242,9 @@
 
     btnDownloadAll.addEventListener('click', function () {
         for (let i = 0; i < translatedFiles.length; i++) {
-            downloadFile(translatedFiles[i].name, translatedFiles[i].content);
+            VP.downloadFile(translatedFiles[i].name, translatedFiles[i].content);
         }
     });
-
-    function downloadFile(name, content) {
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
 
     // --- Dictionary panel ---
     dictToggle.addEventListener('click', function () {
@@ -269,7 +269,7 @@
             (function (file) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
-                    var text = decodeBuffer(e.target.result);
+                    var text = VP.decodeBuffer(e.target.result);
                     DictEngine.importDictText(text, pri, file.name).then(function (count) {
                         totalImported += count;
                         pending--;
@@ -340,47 +340,26 @@
             dictStats.textContent = dictStats2.textContent = 'Error: ' + err.message;
             console.error('Dict load error:', err);
         });
+
+        // Show "continue reading" shortcut
+        updateContinueReading();
     }
 
-    // --- Helpers ---
-    // Detect encoding: try UTF-8 strict, fallback to GBK for Chinese .txt files
-    function decodeBuffer(buf) {
-        var bytes = new Uint8Array(buf);
-        // Check UTF-8 BOM — guaranteed UTF-8
-        if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
-            return new TextDecoder('utf-8').decode(buf);
-        }
-        // Check UTF-16 LE/BE BOM
-        if (bytes.length >= 2) {
-            if (bytes[0] === 0xFF && bytes[1] === 0xFE) return new TextDecoder('utf-16le').decode(buf);
-            if (bytes[0] === 0xFE && bytes[1] === 0xFF) return new TextDecoder('utf-16be').decode(buf);
-        }
-        // Try strict UTF-8 (fatal: true throws on invalid bytes)
+    // --- Continue reading shortcut ---
+    function updateContinueReading() {
+        if (!continueReading) return;
         try {
-            return new TextDecoder('utf-8', { fatal: true }).decode(buf);
-        } catch (e) {
-            // Not valid UTF-8 — try GBK (most common for Chinese .txt)
-        }
-        try {
-            return new TextDecoder('gbk').decode(buf);
-        } catch (e) { /* gbk label not supported */ }
-        try {
-            return new TextDecoder('gb18030').decode(buf);
-        } catch (e) { /* gb18030 not supported */ }
-        // Last resort: lossy UTF-8
-        return new TextDecoder('utf-8', { fatal: false }).decode(buf);
-    }
-
-    function escapeHtml(s) {
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
-
-    function formatSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            var last = JSON.parse(localStorage.getItem('lastReadBook'));
+            if (last && last.id && last.title) {
+                var label = last.title;
+                if (last.chapterIndex != null) label += ' - Ch\u01B0\u01A1ng ' + (last.chapterIndex + 1);
+                continueReading.innerHTML = '<a href="reader.html?book=' + encodeURIComponent(last.id) + '" style="color:var(--accent-2);text-decoration:none;font-size:13px;font-weight:600">' +
+                    'Ti\u1EBFp t\u1EE5c \u0111\u1ECDc: ' + VP.escapeHtml(label) + ' &rarr;</a>';
+                continueReading.classList.remove('hidden');
+                return;
+            }
+        } catch (e) {}
+        continueReading.classList.add('hidden');
     }
 
     // ===== Dictionary Manager =====
@@ -402,10 +381,10 @@
                 var s = sources[i];
                 var dateStr = new Date(s.date).toLocaleDateString();
                 html += '<div class="dm-source-item">' +
-                    '<span class="dm-source-name">' + escapeHtml(s.name) + '</span>' +
+                    '<span class="dm-source-name">' + VP.escapeHtml(s.name) + '</span>' +
                     '<span class="dm-source-count">' + s.count.toLocaleString() + ' entries</span>' +
                     '<span class="dm-source-date">' + dateStr + '</span>' +
-                    '<button class="dm-btn dm-btn-red dm-btn-sm dm-remove-source" data-name="' + escapeHtml(s.name) + '">Remove</button>' +
+                    '<button class="dm-btn dm-btn-red dm-btn-sm dm-remove-source" data-name="' + VP.escapeHtml(s.name) + '">Remove</button>' +
                     '</div>';
             }
             dmSourcesList.innerHTML = html;
@@ -430,8 +409,8 @@
 
         var html = '';
         for (var i = 0; i < filtered.length; i++) {
-            var zh = escapeHtml(filtered[i][0]);
-            var vi = escapeHtml(filtered[i][1]);
+            var zh = VP.escapeHtml(filtered[i][0]);
+            var vi = VP.escapeHtml(filtered[i][1]);
             html += '<tr data-zh="' + zh + '">' +
                 '<td class="col-zh"><span class="dm-cell" data-field="zh">' + zh + '</span></td>' +
                 '<td class="col-vi"><span class="dm-cell" data-field="vi">' + vi + '</span></td>' +
@@ -489,8 +468,8 @@
         if (row.querySelector('.dm-cell-edit')) return;
         var entries = DictEngine.getCustomEntries();
         var vi = entries[zh] || '';
-        row.cells[0].innerHTML = '<input class="dm-cell-edit" data-field="zh" value="' + escapeHtml(zh) + '">';
-        row.cells[1].innerHTML = '<input class="dm-cell-edit" data-field="vi" value="' + escapeHtml(vi) + '">';
+        row.cells[0].innerHTML = '<input class="dm-cell-edit" data-field="zh" value="' + VP.escapeHtml(zh) + '">';
+        row.cells[1].innerHTML = '<input class="dm-cell-edit" data-field="vi" value="' + VP.escapeHtml(vi) + '">';
         row.cells[2].innerHTML = '<button class="dm-btn dm-btn-green dm-btn-sm dm-save-btn">Save</button> ' +
             '<button class="dm-btn dm-btn-default dm-btn-sm dm-cancel-btn">Cancel</button>';
         var viInput = row.cells[1].querySelector('input');
@@ -549,15 +528,7 @@
             }
         }
         if (!lines.length) return;
-        var blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'custom-phrases.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        VP.downloadFile('custom-phrases.txt', lines.join('\n') + '\n');
     });
 
     // Import custom phrases from .txt (CN=VN format)
@@ -567,7 +538,7 @@
         if (!file) return;
         var reader = new FileReader();
         reader.onload = function (e) {
-            var text = decodeBuffer(e.target.result);
+            var text = VP.decodeBuffer(e.target.result);
             var lines = text.split('\n');
             var count = 0;
             var current = DictEngine.getCustomEntries();
@@ -610,7 +581,7 @@
             (function (file) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
-                    var text = decodeBuffer(e.target.result);
+                    var text = VP.decodeBuffer(e.target.result);
                     dmImportProgress.textContent = 'Importing ' + file.name + '...';
                     DictEngine.importDictText(text, 10, file.name).then(function (count) {
                         totalImported += count;
@@ -683,7 +654,7 @@
             if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + file);
             return resp.arrayBuffer();
         }).then(function (buf) {
-            var text = decodeBuffer(buf);
+            var text = VP.decodeBuffer(buf);
             return DictEngine.importDictText(text, priority || 10, file);
         });
     }
@@ -729,6 +700,170 @@
         }
         next();
     });
+
+    // ===== Backup / Restore =====
+    if (btnBackup) {
+        btnBackup.addEventListener('click', function () {
+            backupModal.classList.remove('hidden');
+            backupStatus.textContent = '';
+        });
+        btnCloseBackup.addEventListener('click', function () {
+            backupModal.classList.add('hidden');
+        });
+        backupModal.addEventListener('click', function (e) {
+            if (e.target === backupModal) backupModal.classList.add('hidden');
+        });
+
+        btnExportBackup.addEventListener('click', function () {
+            backupStatus.textContent = '\u0110ang xu\u1EA5t backup...';
+            BackupManager.exportBackup().then(function (json) {
+                var date = new Date().toISOString().slice(0, 10);
+                VP.downloadFile('vietphrase-backup-' + date + '.json', json, 'application/json');
+                backupStatus.textContent = '\u0110\u00E3 xu\u1EA5t backup th\u00E0nh c\u00F4ng!';
+            }).catch(function (err) {
+                backupStatus.textContent = 'L\u1ED7i: ' + err.message;
+            });
+        });
+
+        btnImportBackup.addEventListener('click', function () { backupFileInput.click(); });
+        backupFileInput.addEventListener('change', function () {
+            var file = backupFileInput.files[0];
+            if (!file) return;
+            backupStatus.textContent = '\u0110ang nh\u1EADp backup...';
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                BackupManager.importBackup(ev.target.result).then(function (summary) {
+                    var msg = 'Kh\u00F4i ph\u1EE5c: ';
+                    var parts = [];
+                    if (summary.books) parts.push(summary.books + ' s\u00E1ch');
+                    if (summary.phrases) parts.push(summary.phrases + ' c\u1EE5m t\u1EEB');
+                    if (summary.dicts) parts.push(summary.dicts + ' t\u1EEB \u0111i\u1EC3n');
+                    if (summary.settings) parts.push('c\u00E0i \u0111\u1EB7t');
+                    backupStatus.textContent = msg + (parts.length ? parts.join(', ') : 'kh\u00F4ng c\u00F3 d\u1EEF li\u1EC7u');
+                    // Reload dict if dicts were restored
+                    if (summary.dicts) {
+                        DictEngine.reload().then(function () {
+                            updateDictStats();
+                        });
+                    }
+                    updateContinueReading();
+                }).catch(function (err) {
+                    backupStatus.textContent = 'L\u1ED7i: ' + err.message;
+                });
+            };
+            reader.readAsText(file);
+            backupFileInput.value = '';
+        });
+    }
+
+    // ===== Cloud Sync =====
+    var btnSyncIdx = document.getElementById('btnSync');
+    var syncModalIdx = document.getElementById('syncModal');
+    var syncStatusMsgIdx = document.getElementById('syncStatusMsg');
+    var syncConnectedIdx = document.getElementById('syncConnected');
+    var syncDisconnectedIdx = document.getElementById('syncDisconnected');
+    var btnDoSyncIdx = document.getElementById('btnDoSync');
+    var btnConnectIdx = document.getElementById('btnConnect');
+    var btnDisconnectIdx = document.getElementById('btnDisconnect');
+    var btnCloseSyncIdx = document.getElementById('btnCloseSync');
+
+    function updateSyncBtnIdx() {
+        if (!window.CloudSync || !btnSyncIdx) return;
+        btnSyncIdx.style.color = CloudSync.isSignedIn() ? 'var(--green)' : 'var(--text)';
+    }
+
+    function updateSyncModalIdx() {
+        if (!window.CloudSync) return;
+        if (CloudSync.isSignedIn()) {
+            syncConnectedIdx.classList.remove('hidden');
+            syncDisconnectedIdx.classList.add('hidden');
+            var ls = CloudSync.getLastSyncTime();
+            syncStatusMsgIdx.textContent = ls ? 'Last sync: ' + new Date(ls).toLocaleString() : 'Connected.';
+        } else {
+            syncConnectedIdx.classList.add('hidden');
+            syncDisconnectedIdx.classList.remove('hidden');
+            syncStatusMsgIdx.textContent = '';
+        }
+    }
+
+    if (btnSyncIdx) {
+        btnSyncIdx.addEventListener('click', function () {
+            syncModalIdx.classList.remove('hidden');
+            updateSyncModalIdx();
+        });
+    }
+    if (btnCloseSyncIdx) {
+        btnCloseSyncIdx.addEventListener('click', function () {
+            syncModalIdx.classList.add('hidden');
+        });
+        syncModalIdx.addEventListener('click', function (e) {
+            if (e.target === syncModalIdx) syncModalIdx.classList.add('hidden');
+        });
+    }
+    if (btnConnectIdx) {
+        btnConnectIdx.addEventListener('click', function () {
+            btnConnectIdx.disabled = true;
+            btnConnectIdx.textContent = 'Connecting...';
+            CloudSync.signIn().then(function () {
+                btnConnectIdx.disabled = false;
+                btnConnectIdx.textContent = 'K\u1EBFt n\u1ED1i Google Drive';
+                updateSyncBtnIdx();
+                updateSyncModalIdx();
+            }).catch(function (err) {
+                btnConnectIdx.disabled = false;
+                btnConnectIdx.textContent = 'K\u1EBFt n\u1ED1i Google Drive';
+                syncStatusMsgIdx.textContent = 'Error: ' + err.message;
+            });
+        });
+    }
+    if (btnDisconnectIdx) {
+        btnDisconnectIdx.addEventListener('click', function () {
+            CloudSync.signOut();
+            updateSyncBtnIdx();
+            updateSyncModalIdx();
+        });
+    }
+    if (btnDoSyncIdx) {
+        btnDoSyncIdx.addEventListener('click', function () {
+            btnDoSyncIdx.disabled = true;
+            syncStatusMsgIdx.textContent = 'Syncing...';
+            CloudSync.sync(function (msg) {
+                syncStatusMsgIdx.textContent = msg;
+            }).then(function (summary) {
+                btnDoSyncIdx.disabled = false;
+                syncStatusMsgIdx.textContent = 'Sync done!';
+                updateSyncBtnIdx();
+                // Reload custom phrases if DictEngine available
+                if (window.DictEngine && DictEngine.isReady) {
+                    try {
+                        var entries = DictEngine.getCustomEntries();
+                        if (entries) {
+                            renderPhraseTable();
+                            refreshDmStats();
+                            updateDictStats();
+                        }
+                    } catch (e) {}
+                }
+                updateContinueReading();
+            }).catch(function (err) {
+                btnDoSyncIdx.disabled = false;
+                if (err.message === 'TOKEN_EXPIRED') {
+                    syncStatusMsgIdx.textContent = 'Session expired. Please reconnect.';
+                    CloudSync.signOut();
+                    updateSyncBtnIdx();
+                    updateSyncModalIdx();
+                } else {
+                    syncStatusMsgIdx.textContent = 'Sync error: ' + err.message;
+                }
+            });
+        });
+    }
+
+    // Init cloud sync
+    if (window.CloudSync) {
+        CloudSync.init();
+        updateSyncBtnIdx();
+    }
 
     // Register service worker
     if ('serviceWorker' in navigator) {

@@ -457,6 +457,33 @@
         return loadDictionary();
     }
 
+    // Get all imported sources with full TSV data (for backup)
+    function getImportedSourcesFull() {
+        return loadAllImports().catch(function () { return []; });
+    }
+
+    // Restore imports from backup: bulk put all records, then rebuild
+    function restoreImports(arr) {
+        if (!arr || !arr.length) return Promise.resolve(0);
+        return openDB().then(function (db) {
+            return new Promise(function (resolve, reject) {
+                var tx = db.transaction('imports', 'readwrite');
+                var store = tx.objectStore('imports');
+                var count = 0;
+                for (var i = 0; i < arr.length; i++) {
+                    if (arr[i].name && arr[i].tsv) {
+                        store.put(arr[i]);
+                        count++;
+                    }
+                }
+                tx.oncomplete = function () { db.close(); resolve(count); };
+                tx.onerror = function () { db.close(); reject(tx.error); };
+            });
+        }).then(function (count) {
+            return rebuildFromDB().then(function () { return count; });
+        });
+    }
+
     window.DictEngine = {
         loadDictionary: loadDictionary,
         translate: segmentAndTranslate,
@@ -470,6 +497,8 @@
         clearCustom: clearCustom,
         setCustomEntries: setCustomEntries,
         getImportedSources: getImportedSources,
+        getImportedSourcesFull: getImportedSourcesFull,
+        restoreImports: restoreImports,
         removeImportedSource: removeImportedSource,
         clearAllImported: clearAllImported,
         get customCount() { return customEntries.size; },

@@ -961,6 +961,10 @@
             .app { max-width: 1120px; padding: 32px 48px; }
         }
 
+        /* Sync button animation */
+        @keyframes syncSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .syncing { animation: syncSpin 1s linear infinite; }
+
         :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         textarea:focus-visible { outline: none; }
     </style>
@@ -978,6 +982,9 @@
             <div class="hero-title">VietPhrase</div>
             <div class="hero-sub">Chinese &#x2192; Vietnamese Translator</div>
             <div class="header-actions">
+                <a href="reader.html" id="btnReader" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;font-family:var(--font);transition:all 0.2s var(--ease)" onmouseover="this.style.background='var(--surface-card-hover)'" onmouseout="this.style.background='var(--surface-card)'">Reader</a>
+                <button id="btnSync" title="Cloud Sync" style="width:36px;height:36px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease);line-height:1">&#x2601;</button>
+                <button id="btnBackup" title="Backup / Restore" style="width:36px;height:36px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease);line-height:1">&#x1F4BE;</button>
                 <button id="btnTheme" title="Toggle theme">&#x1F319;</button>
                 <button id="btnInstall" class="hidden">Install App</button>
             </div>
@@ -1174,12 +1181,53 @@
         </div>
     </div>
 
+    <!-- Continue reading shortcut -->
+    <div id="continueReading" class="hidden" style="position:fixed;bottom:20px;right:20px;z-index:10;background:var(--surface-card);border:1px solid var(--border);border-radius:12px;padding:10px 16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow)"></div>
+
+    <!-- Sync modal -->
+    <div class="modal-backdrop hidden" id="syncModal" style="position:fixed;inset:0;z-index:70;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:420px;width:100%">
+            <div style="font-size:16px;font-weight:700;margin-bottom:16px">Cloud Sync</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <div id="syncStatusMsg" style="font-size:13px;color:var(--text-secondary)"></div>
+                <div id="syncConnected" class="hidden">
+                    <button class="btn-import" id="btnDoSync" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">Sync Now</button>
+                    <button id="btnDisconnect" style="padding:10px 18px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(255,59,48,0.1);color:#ff6b6b;width:100%;text-align:center;margin-top:8px">Ng&#7855;t k&#7871;t n&#7889;i</button>
+                </div>
+                <div id="syncDisconnected">
+                    <button class="btn-import" id="btnConnect" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">K&#7871;t n&#7889;i Google Drive</button>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">&#272;&#7891;ng b&#7897; custom phrases, settings gi&#7919;a c&#225;c thi&#7871;t b&#7883;</div>
+                </div>
+                <button id="btnCloseSync" style="padding:10px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);color:var(--text-secondary);width:100%;text-align:center;border:1px solid var(--border)">&#272;&#243;ng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup modal -->
+    <div class="modal-backdrop hidden" id="backupModal" style="position:fixed;inset:0;z-index:70;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:420px;width:100%">
+            <div style="font-size:16px;font-weight:700;margin-bottom:16px">Backup / Restore</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <button class="btn-import" id="btnExportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:rgba(124,108,240,0.12);color:var(--accent-2);width:100%;text-align:center">Export Backup (.json)</button>
+                <button class="btn-import" id="btnImportBackup" style="padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);width:100%;text-align:center">Import Backup (.json)</button>
+                <input type="file" id="backupFileInput" accept=".json" style="display:none">
+                <div id="backupStatus" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></div>
+                <button id="btnCloseBackup" style="padding:10px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--surface);color:var(--text-secondary);width:100%;text-align:center;border:1px solid var(--border)">&#272;&#243;ng</button>
+            </div>
+        </div>
+    </div>
+
     <div class="loading-overlay hidden" id="loadingOverlay">
         <div class="spinner"></div>
         <div class="loading-text">Loading dictionary...</div>
     </div>
 
+    <script src="https://accounts.google.com/gsi/client" async defer onload="window.__onGisLoaded && window.__onGisLoaded()"></script>
+    <script src="utils.js"></script>
     <script src="dict-engine.js"></script>
+    <script src="reader-lib.js"></script>
+    <script src="cloud-sync.js"></script>
+    <script src="backup.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
