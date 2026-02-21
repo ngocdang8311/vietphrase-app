@@ -22,15 +22,16 @@
 
     function _loadToken() {
         try {
-            accessToken = localStorage.getItem(TOKEN_KEY) || null;
+            var raw = localStorage.getItem(TOKEN_KEY);
+            accessToken = raw ? raw.trim() : null;
             gistId = localStorage.getItem(GIST_ID_KEY) || null;
             return !!accessToken;
         } catch (e) { return false; }
     }
 
     function _saveToken(token) {
-        accessToken = token;
-        try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {}
+        accessToken = token ? token.trim() : null;
+        try { if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken); } catch (e) {}
     }
 
     function _clearToken() {
@@ -52,10 +53,14 @@
     function _ghFetch(url, opts) {
         opts = opts || {};
         function attempt(retryCount) {
-            if (!accessToken) return Promise.reject(new Error('TOKEN_EXPIRED'));
+            var token = (accessToken || '').trim();
+            if (!token) return Promise.reject(new Error('TOKEN_EXPIRED'));
             var headers = opts.headers ? Object.assign({}, opts.headers) : {};
-            headers['Authorization'] = 'token ' + accessToken;
-            headers['Accept'] = 'application/vnd.github+json';
+            // Only send auth header to api.github.com (not raw CDN)
+            if (url.indexOf('https://api.github.com') === 0) {
+                headers['Authorization'] = 'Bearer ' + token;
+                headers['Accept'] = 'application/vnd.github+json';
+            }
             var fetchOpts = Object.assign({}, opts, { headers: headers });
 
             return fetch(url, fetchOpts).then(function (resp) {
@@ -73,10 +78,12 @@
             }).catch(function (err) {
                 if (err.message === 'TOKEN_EXPIRED') throw err;
                 if (err.name === 'TypeError' && retryCount < MAX_RETRIES) {
+                    console.error('[GitHubSync] fetch error (retry ' + retryCount + '):', url, err.message);
                     return new Promise(function (resolve) {
                         setTimeout(resolve, RETRY_DELAYS[retryCount] || 4000);
                     }).then(function () { return attempt(retryCount + 1); });
                 }
+                console.error('[GitHubSync] fetch failed:', url, err.message);
                 throw err;
             });
         }
@@ -93,7 +100,13 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ client_id: CLIENT_ID, scope: 'gist' })
-            }).then(function (resp) { return resp.json(); })
+            }).then(function (resp) {
+                var ct = resp.headers.get('content-type') || '';
+                if (!resp.ok || ct.indexOf('json') === -1) {
+                    throw new Error('Proxy endpoint unavailable (HTTP ' + resp.status + '). Deploy CF Pages Functions first.');
+                }
+                return resp.json();
+            })
             .then(function (data) {
                 if (data.error) {
                     reject(new Error(data.error_description || data.error));
@@ -136,7 +149,11 @@
                             device_code: deviceCode,
                             grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
                         })
-                    }).then(function (resp) { return resp.json(); })
+                    }).then(function (resp) {
+                        var ct = resp.headers.get('content-type') || '';
+                        if (ct.indexOf('json') === -1) throw new Error('Proxy not available');
+                        return resp.json();
+                    })
                     .then(function (tokenData) {
                         if (tokenData.access_token) {
                             _saveToken(tokenData.access_token);
@@ -236,9 +253,12 @@
     function _readGistFile(gist, filename) {
         var file = gist.files[filename];
         if (!file) return Promise.resolve(null);
-        // If truncated, fetch raw_url
+        // If truncated, fetch raw_url (no auth — CDN URL is pre-signed)
         if (file.truncated && file.raw_url) {
-            return _ghFetch(file.raw_url).then(function (resp) { return resp.text(); });
+            return fetch(file.raw_url).then(function (resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status + ' fetching ' + filename);
+                return resp.text();
+            });
         }
         return Promise.resolve(file.content);
     }
@@ -361,6 +381,7 @@
             return result;
         }).catch(function (err) {
             syncInProgress = false;
+            console.error('[GitHubSync] sync error:', err);
             throw err;
         });
     }
