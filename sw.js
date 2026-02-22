@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v40';
+const CACHE_NAME = 'cnvn-dict-v41';
 const APP_ASSETS = [
     '/',
     '/index.html',
@@ -31,6 +31,7 @@ const APP_ASSETS = [
     '/foliate-js/mobi.js',
     '/foliate-js/fb2.js',
     '/foliate-js/comic-book.js',
+    '/lookup-popup.js',
     '/dicts/LuatNhan.txt',
     '/dicts/trad-simp.txt'
 ];

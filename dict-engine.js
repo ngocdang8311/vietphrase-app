@@ -711,6 +711,10 @@
         try { localStorage.setItem('customDict', JSON.stringify(Object.fromEntries(customEntries))); } catch (e) {}
     }
 
+    function isCustom(zh) {
+        return customEntries.has(convertToSimplified(zh));
+    }
+
     function getCustomEntries() { return Object.fromEntries(customEntries); }
 
     function clearCustom() {
@@ -784,6 +788,7 @@
         parseDictText: parseDictText,
         addCustom: addCustom,
         removeCustom: removeCustom,
+        isCustom: isCustom,
         getCustomEntries: getCustomEntries,
         clearCustom: clearCustom,
         setCustomEntries: setCustomEntries,

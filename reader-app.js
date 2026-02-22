@@ -887,9 +887,27 @@
 
     // --- Immersive mode: tap content to toggle bars ---
     readerContent.addEventListener('click', function (e) {
-        // Don't toggle if user is selecting text
-        if (window.getSelection().toString()) return;
-        readerOverlay.classList.toggle('immersive');
+        // Lookup popup: dismiss if open and clicking outside
+        if (typeof LookupPopup !== 'undefined' && LookupPopup.isOpen()) return;
+
+        // Check for text selection containing Chinese
+        var sel = window.getSelection();
+        var selText = sel.toString().trim();
+        if (selText && /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(selText) && typeof LookupPopup !== 'undefined') {
+            e.stopPropagation();
+            var range = sel.getRangeAt(0);
+            var rect = range.getBoundingClientRect();
+            var anchor = { getBoundingClientRect: function () { return rect; } };
+            LookupPopup.show(selText, anchor, {
+                onPhraseChanged: function () { /* TXT: no re-translate possible */ }
+            });
+            return;
+        }
+
+        // Default: toggle immersive
+        if (!selText) {
+            readerOverlay.classList.toggle('immersive');
+        }
     });
 
     // Keyboard shortcuts in reader

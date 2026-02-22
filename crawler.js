@@ -907,6 +907,21 @@
             var p = e.target.closest('[data-zh]');
             if (p) p.title = p.dataset.zh;
         });
+
+        // Click to lookup: segment breakdown popup
+        els.content.addEventListener('click', function (e) {
+            if (typeof LookupPopup === 'undefined') return;
+            var p = e.target.closest('p[data-zh]');
+            if (!p || !p.dataset.zh) { LookupPopup.hide(); return; }
+            e.stopPropagation();
+            LookupPopup.show(p.dataset.zh, p, {
+                onPhraseChanged: function () {
+                    if (typeof DictEngine !== 'undefined' && DictEngine.isReady) {
+                        p.textContent = DictEngine.translate(p.dataset.zh);
+                    }
+                }
+            });
+        });
     }
 
     // ===== View System =====
