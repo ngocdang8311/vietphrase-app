@@ -60,6 +60,10 @@
     var dmAddVi = document.getElementById('dmAddVi');
     var dmAddBtn = document.getElementById('dmAddBtn');
 
+    // Translation settings elements
+    var dmChuyenGianThe = document.getElementById('dmChuyenGianThe');
+    var dmThuatToanNhan = document.getElementById('dmThuatToanNhan');
+
     // Backup elements
     var btnBackup = document.getElementById('btnBackup');
     var backupModal = document.getElementById('backupModal');
@@ -621,6 +625,18 @@
             updateDictStats();
             updateSampleButtons();
         });
+    });
+
+    // ===== Translation Settings =====
+    // Init UI from current engine state
+    dmChuyenGianThe.checked = DictEngine.chuyenGianThe;
+    dmThuatToanNhan.value = String(DictEngine.thuatToanNhan);
+
+    dmChuyenGianThe.addEventListener('change', function () {
+        DictEngine.setChuyenGianThe(dmChuyenGianThe.checked);
+    });
+    dmThuatToanNhan.addEventListener('change', function () {
+        DictEngine.setThuatToanNhan(parseInt(dmThuatToanNhan.value, 10));
     });
 
     // ===== Sample Dictionaries =====

@@ -1112,6 +1112,24 @@
                 <div id="dmSourcesList" style="margin-top:12px"></div>
             </div>
 
+            <!-- Translation Settings -->
+            <div class="dm-section">
+                <div class="dm-section-title">Translation Settings</div>
+                <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+                    <input type="checkbox" id="dmChuyenGianThe" checked>
+                    <span>Chuyển giản thể (Traditional → Simplified)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <span>Luật nhân:</span>
+                    <select id="dmThuatToanNhan" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font-size:13px">
+                        <option value="0">Tắt</option>
+                        <option value="1">Đại từ</option>
+                        <option value="2" selected>Đại từ + Tên</option>
+                        <option value="3">Đại từ + Tên + VietPhrase</option>
+                    </select>
+                </label>
+            </div>
+
             <!-- Sample Dictionaries -->
             <div class="dm-section">
                 <div class="dm-section-title">Sample Dictionaries</div>
@@ -1142,6 +1160,13 @@
                         <div class="dm-sample-info">
                             <div class="dm-sample-name">VietPhrase</div>
                             <div class="dm-sample-meta">878.8K entries &middot; 32.2 MB &middot; Bộ Việt Phrase chính (2 parts) &middot; Priority: 10</div>
+                        </div>
+                        <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
+                    </div>
+                    <div class="dm-sample-item" data-file="LuatNhan.txt" data-priority="15">
+                        <div class="dm-sample-info">
+                            <div class="dm-sample-name">LuatNhan</div>
+                            <div class="dm-sample-meta">~24K entries &middot; 1 MB &middot; Luật nhân (pattern rules) &middot; Priority: 15</div>
                         </div>
                         <button class="dm-btn dm-btn-accent dm-btn-sm dm-sample-btn">Import</button>
                     </div>

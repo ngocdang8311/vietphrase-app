@@ -1,5 +1,5 @@
 // ===== Service Worker for PWA (Offline Cache) =====
-const CACHE_NAME = 'cnvn-dict-v36';
+const CACHE_NAME = 'cnvn-dict-v40';
 const APP_ASSETS = [
     '/',
     '/index.html',
@@ -30,7 +30,9 @@ const APP_ASSETS = [
     '/foliate-js/vendor/fflate.js',
     '/foliate-js/mobi.js',
     '/foliate-js/fb2.js',
-    '/foliate-js/comic-book.js'
+    '/foliate-js/comic-book.js',
+    '/dicts/LuatNhan.txt',
+    '/dicts/trad-simp.txt'
 ];
 
 self.addEventListener('install', function (event) {
