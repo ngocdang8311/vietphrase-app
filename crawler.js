@@ -1201,7 +1201,7 @@
                 '<div class="crawler-browse-card-title" data-zh="' + VP.escapeHtml(n.title) + '">' +
                     VP.escapeHtml(n.title) +
                 '</div>' +
-                (n.author ? '<div class="crawler-browse-card-author">' + VP.escapeHtml(n.author) + '</div>' : '') +
+                (n.author ? '<div class="crawler-browse-card-author" data-zh="' + VP.escapeHtml(n.author) + '">' + VP.escapeHtml(n.author) + '</div>' : '') +
                 (n.description ? '<div class="crawler-browse-card-desc" data-zh="' + VP.escapeHtml(n.description) + '">' +
                     VP.escapeHtml(n.description) + '</div>' : '') +
             '</div>';
@@ -1237,6 +1237,11 @@
             for (var i = 0; i < titles.length; i++) {
                 var zh = titles[i].dataset.zh;
                 if (zh) titles[i].textContent = DictEngine.translate(zh);
+            }
+            var authors = containerEl.querySelectorAll('.crawler-browse-card-author[data-zh]');
+            for (var k = 0; k < authors.length; k++) {
+                var zh3 = authors[k].dataset.zh;
+                if (zh3) authors[k].textContent = DictEngine.translate(zh3);
             }
             var descs = containerEl.querySelectorAll('.crawler-browse-card-desc[data-zh]');
             for (var j = 0; j < descs.length; j++) {
